@@ -227,6 +227,9 @@
                 <th>Neutral Slide time</th>
                 <th>Rapid Speedup instances</th>
                 <th>Rapid Slowdown instances</th>
+                <th>Hthrottle Stop instances</th>
+                <th>oil Leak instances</th>
+                <th>Total number of dangerous events</th>
               </tr>
             </thead>
             <tbody id="summaryBody">
