@@ -1,0 +1,1 @@
+ssh -i "k.pem" ec2-user@ec2-18-214-80-27.compute-1.amazonaws.com
