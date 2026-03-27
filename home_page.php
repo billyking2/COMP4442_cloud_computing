@@ -1,12 +1,12 @@
 <?php
 $ROOT_DIR = $_SERVER['DOCUMENT_ROOT'];
 // Handle file upload 
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   // Set JSON header 
   header('Content-Type: application/json');
 
   $upload_dir = "$ROOT_DIR/data/";
-  
+
   // Create directory if not exists
   if (!file_exists($upload_dir)) {
     if (!mkdir($upload_dir, 0777, true)) {
@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
       exit;
     }
   }
+
 
   $file = $_FILES['csv_file'];
 
