@@ -555,19 +555,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // get driver list and update driver select options
     async function loadDrivers(startTime = null, endTime = null) {
       try {
-        let url = 'api/get_drivers';
-        const params = [];
+        const response = await fetch('api/get_drivers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            start_time: startTime,
+            end_time: endTime
+          })
+        });
 
-        if (startTime && endTime) {
-          params.push(`start_time=${encodeURIComponent(startTime)}`);
-          params.push(`end_time=${encodeURIComponent(endTime)}`);
-        }
 
-        if (params.length > 0) {
-          url += '?' + params.join('&');
-        }
-
-        const response = await fetch(url);
         const data = await response.json();
 
         if (data.success) {
