@@ -1,11 +1,12 @@
 <?php
+$ROOT_DIR = $_SERVER['DOCUMENT_ROOT'];
 // Handle file upload 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
   // Set JSON header 
   header('Content-Type: application/json');
 
-  $upload_dir = '/home/ec2-user/project/data/';
-
+  $upload_dir = "$ROOT_DIR/data/";
+  
   // Create directory if not exists
   if (!file_exists($upload_dir)) {
     if (!mkdir($upload_dir, 0777, true)) {
@@ -69,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
   // move file from temp location to upload directory
   if (move_uploaded_file($file['tmp_name'], $filepath)) {
     // Call Python script
-    $python_script = '/home/ec2-user/project/csv_importer.py';
+    $python_script = "$ROOT_DIR/csv_importer.py";
 
     // Check if Python script exists
     if (!file_exists($python_script)) {
