@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       echo json_encode([
         'success' => true,
         'message' => 'File uploaded and imported successfully!',
-        'filename' => $filename,
+        'filename' => $file['name'],
         'details' => $output_str
       ]);
     } else {
