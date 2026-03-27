@@ -513,7 +513,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         if (result.success) {
 
-          uploadStatus.innerHTML = '' + result.message;
+          uploadStatus.innerHTML = result.message;
+          uploadStatus.style.color = 'green';
 
           setTimeout(() => {
             closeUploadModal();
@@ -524,12 +525,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
           }, 2000);
         } else {
           uploadStatus.innerHTML = (result.message || result.error || 'Upload failed');
+          uploadStatus.style.color = 'red';
           showAlert('Upload failed: ' + (result.message || result.error), 'error');
+
+          setTimeout(() => {
+            closeUploadModal();
+          }, 2000);
+
         }
       } catch (error) {
         console.error('Upload error:', error);
         uploadStatus.innerHTML = ' Upload failed: ' + error.message;
+        uploadStatus.style.color = 'red';
         showAlert('Upload failed: ' + error.message, 'error');
+
+        setTimeout(() => {
+          closeUploadModal();
+        }, 2000);
       } finally {
         setTimeout(() => {
           uploadStatus.innerHTML = '';
@@ -664,7 +676,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
       if (tabName === 'summary') {
         summaryTab.style.display = 'block';
-        summaryTab.classList.add('active');
+        tabs[0].classList.add('active');
         monitorTab.style.display = 'none';
 
         if (updateInterval) {
@@ -675,7 +687,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         summaryTab.style.display = 'none';
         monitorTab.style.display = 'block';
-        monitorTab.classList.add('active');
+        tabs[1].classList.add('active');
 
         updateSpeedChart();
 
