@@ -5,7 +5,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   // Set JSON header 
   header('Content-Type: application/json');
 
-  $upload_dir = "$ROOT_DIR/data/";
+  $upload_dir = "$ROOT_DIR/detail-records/";
 
   // Create directory if not exists
   if (!file_exists($upload_dir)) {
@@ -41,12 +41,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     exit;
   }
 
-  // Check file type
-  $fileType = pathinfo($file['name'], PATHINFO_EXTENSION);
-  $fileType = strtolower($fileType);
+  // check file type
 
-  if ($fileType != 'csv') {
-    echo json_encode(['success' => false, 'message' => 'Please upload CSV file (got .' . $fileType . ')']);
+  $fileType = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+  $allowed_types = ['csv', 'txt', ''];   // '' means no extension
+
+  if (!in_array($fileType, $allowed_types)) {
+    echo json_encode([
+      'success' => false,
+      'message' => 'Only .csv, .txt files or files without extension are allowed (got .' . $fileType . ')'
+    ]);
     exit;
   }
 
@@ -71,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   // move file from temp location to upload directory
   if (move_uploaded_file($file['tmp_name'], $filepath)) {
     // Call Python script
-    $python_script = "$ROOT_DIR/csv_importer.py";
+    $python_script = "$upload_dir/insert_data.py";
 
     // Check if Python script exists
     if (!file_exists($python_script)) {
@@ -469,7 +474,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       <div class="modal-body">
         <div id="uploadArea" class="upload-area" onclick="document.getElementById('csvFile').click()">
           <div>upload file</div>
-          <div class="file-info">Support: CSV format, max 10MB</div>
+          <div class="file-info">Support: csv,txt format, max 10MB</div>
         </div>
         <input type="file" id="csvFile" accept=".csv" style="display: none;" onchange="uploadFile(this.files[0])">
         <div id="uploadStatus" style="font-size: 12px; color: #666; text-align: center;"></div>
