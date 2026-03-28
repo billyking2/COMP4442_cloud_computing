@@ -68,6 +68,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   // check filename, only allow letters, numbers, underscores and point
   if (preg_match('/^[a-zA-Z0-9_\-\.]+$/', $file['name'])) {
     $filepath = $upload_dir . $file['name'];
+
+    // Check if file already exists
+    if (file_exists($filepath)) {
+      echo json_encode([
+        'success' => false,
+        'message' => 'File already exists. Please rename the file or delete the existing one first.'
+      ]);
+      exit;
+    }
+
   } else {
     echo json_encode(['success' => false, 'message' => 'Filename can only contain letters, number, underscores, dashes and dots']);
     exit;
@@ -84,8 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       exit;
     }
 
-    // Execute Python script
-    // difine command 
+    // execute python script
+    // define command 
     $interpreter = "python3";                          // Python 
     $script = escapeshellarg($python_script);          // Python path
     $input_file = escapeshellarg($filepath);           // CSV path
