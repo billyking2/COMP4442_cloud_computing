@@ -38,6 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
     $filepath = $upload_dir . $filename;
 
     if (file_exists($filepath)) {
+        error_log("Duplicate file upload attempted: " . $filename);
+
         echo json_encode([
             'success' => false,
             'message' => 'File "' . $filename . '" already exists. Please rename the file or send another one.'

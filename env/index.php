@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   }
 
   // send to ec2 server
-  $remote_url = 'http://172-31-19-164/upload-api/upload_api.php';
+  $remote_url = 'http://ec2-18-214-80-27.compute-1.amazonaws.com/upload-api/upload_api.php';
 
   $ch = curl_init();
   curl_setopt($ch, CURLOPT_URL, $remote_url);
@@ -494,14 +494,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             document.getElementById('timeForm').dispatchEvent(submitEvent);
           }, 2000);
         } else {
-          uploadStatus.innerHTML = (result.message || result.error || 'Upload failed');
-          uploadStatus.style.color = 'red';
-          showAlert('Upload failed: ' + (result.message || result.error), 'error');
 
-          setTimeout(() => {
-            closeUploadModal();
-          }, 1000);
+          let errorMessage = result.message || result.error || 'Upload failed';
 
+          //  handling for duplicate file errors
+          if (errorMessage.includes('already exists')) {
+            uploadStatus.innerHTML = errorMessage;
+            uploadStatus.style.color = 'orange';
+
+            showAlert(errorMessage, 'error');
+
+
+            setTimeout(() => {
+              if (uploadStatus.innerHTML.includes('already exists')) {
+                uploadStatus.innerHTML = '';
+              }
+            }, 1000);
+          } else {
+            uploadStatus.innerHTML = errorMessage;
+            uploadStatus.style.color = 'red';
+            showAlert('Upload failed: ' + errorMessage, 'error');
+
+            setTimeout(() => {
+              closeUploadModal();
+            }, 1000);
+          }
         }
       } catch (error) {
         console.error('Upload error:', error);
