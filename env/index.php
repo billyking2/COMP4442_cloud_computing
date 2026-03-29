@@ -1,20 +1,8 @@
 <?php
-$ROOT_DIR = $_SERVER['DOCUMENT_ROOT'];
 // Handle file upload 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   // Set JSON header 
   header('Content-Type: application/json');
-
-  $upload_dir = "$ROOT_DIR/detail-records/";
-
-  // Create directory if not exists
-  if (!file_exists($upload_dir)) {
-    if (!mkdir($upload_dir, 0777, true)) {
-      echo json_encode(['success' => false, 'message' => 'Cannot create upload directory']);
-      exit;
-    }
-  }
-
 
   $file = $_FILES['csv_file'];
 
@@ -42,9 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   }
 
   // check file type
-
   $fileType = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-
   $allowed_types = ['csv', 'txt', ''];   // '' means no extension
 
   if (!in_array($fileType, $allowed_types)) {
@@ -61,78 +47,46 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     exit;
   }
 
-
-
-  // Save file
-
-  // check filename, only allow letters, numbers, underscores and point
-  if (preg_match('/^[a-zA-Z0-9_\-\.]+$/', $file['name'])) {
-    $filepath = $upload_dir . $file['name'];
-
-    // Check if file already exists
-    if (file_exists($filepath)) {
-      echo json_encode([
-        'success' => false,
-        'message' => 'File already exists. Please rename the file or delete the existing one first.'
-      ]);
-      exit;
-    }
-
-  } else {
+  // check filename, only allow letters, numbers, underscores, dashes and dots
+  if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $file['name'])) {
     echo json_encode(['success' => false, 'message' => 'Filename can only contain letters, number, underscores, dashes and dots']);
     exit;
   }
 
-  // move file from temp location to upload directory
-  if (move_uploaded_file($file['tmp_name'], $filepath)) {
-    // Call Python script
-    $python_script = "$upload_dir/insert_data.py";
+  // send to ec2 server
+  $remote_url = 'http://172-31-19-164/upload-api/upload_api.php';
 
-    // Check if Python script exists
-    if (!file_exists($python_script)) {
-      echo json_encode(['success' => false, 'message' => 'Python script not found: ' . $python_script]);
-      exit;
-    }
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, $remote_url);
+  curl_setopt($ch, CURLOPT_POST, true);
+  curl_setopt($ch, CURLOPT_POSTFIELDS, [
+    'csv_file' => new CURLFile($file['tmp_name'], $file['type'], $file['name'])
+  ]);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+  curl_setopt($ch, CURLOPT_TIMEOUT, 60);
 
-    // execute python script
-    // define command 
-    $interpreter = "python3";                          // Python 
-    $script = escapeshellarg($python_script);          // Python path
-    $input_file = escapeshellarg($filepath);           // CSV path
-    $redirect = "2>&1";                                // put error message into output
+  $response = curl_exec($ch);
+  $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+  $curl_error = curl_error($ch);
+  curl_close($ch);
 
-    //combine command
-    $command = implode(" ", [
-      $interpreter,
-      $script,
-      $input_file,
-      $redirect
+  if ($curl_error) {
+    echo json_encode([
+      'success' => false,
+      'message' => 'Failed to connect to remote server: ' . $curl_error
     ]);
+    exit;
+  }
 
-    $output = [];
-    $return_var = 0;
-    exec($command, $output, $return_var);
+  if ($http_code == 200) {
 
-    // connect array element with \n
-    $output_str = implode("\n", $output);
-
-    // return_var = 0 means success, otherwise failure
-    if ($return_var === 0) {
-      echo json_encode([
-        'success' => true,
-        'message' => 'File uploaded and imported successfully!',
-        'filename' => $file['name'],
-        'details' => $output_str
-      ]);
-    } else {
-      echo json_encode([
-        'success' => false,
-        'message' => 'File uploaded but fail in other place',
-        'error' => $output_str
-      ]);
-    }
+    echo $response;
   } else {
-    echo json_encode(['success' => false, 'message' => 'Failed to save uploaded file']);
+    echo json_encode([
+      'success' => false,
+      'message' => 'Failed to upload to remote server (HTTP ' . $http_code . ')',
+      'response' => $response
+    ]);
   }
   exit;
 }
@@ -484,9 +438,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       <div class="modal-body">
         <div id="uploadArea" class="upload-area" onclick="document.getElementById('csvFile').click()">
           <div>upload file</div>
+          <div> (Only one file can be uploaded at a time.) </div>
           <div class="file-info">Support: csv,txt format, max 10MB</div>
         </div>
-        <input type="file" id="csvFile" accept=".csv" style="display: none;" onchange="uploadFile(this.files[0])">
+        <input type="file" id="csvFile" accept=".csv,.txt" style="display: none;" onchange="uploadFile(this.files[0])">
         <div id="uploadStatus" style="font-size: 12px; color: #666; text-align: center;"></div>
       </div>
     </div>
