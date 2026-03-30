@@ -554,7 +554,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // get driver list and update driver select options
     async function loadDrivers(startTime = null, endTime = null) {
       try {
-        const response = await fetch('api/get_drivers', {
+        const response = await fetch('http://18.214.80.27:5000/api/get_drivers', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -597,7 +597,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
       // get driving behavior information
       try {
-        const response = await fetch('/api/get_driving_behavior_information', {
+        const response = await fetch('http://18.214.80.27:5000/api/get_driving_behavior_information', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
