@@ -74,8 +74,7 @@ def get_drivers():
     if(start_time[0:21] ==end_time[0:21]):
         table_name = start_time
     else:
-        table_name = handle_time(start_time, end_time)
-        table_name = build_union_query(table_name)
+        table_name = build_union_query(handle_time(start_time, end_time))
     
     if table_name is not None:    
         _, current_df = init_spark(table_name)
@@ -100,8 +99,7 @@ def get_driving_behavior_information():
     if(start_time[0:21] ==end_time[0:21]):
         table_name = start_time
     else:
-        table_name = handle_time(start_time, end_time)
-        table_name = build_union_query(table_name)
+        table_name = build_union_query(handle_time(start_time, end_time))
     
     if table_name is not None:    
       _, current_df = init_spark(table_name)
