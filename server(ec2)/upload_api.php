@@ -1,4 +1,6 @@
 <?php
+header('Content-Type: application/json');
+
 $upload_dir = '/home/ec2-user/detail-records/';
 
 // if the upload directory does not exist, create it
@@ -6,11 +8,27 @@ if (!file_exists($upload_dir)) {
     mkdir($upload_dir, 0777, true);
 }
 
-// Set the response header to JSON
-header('Content-Type: application/json');
+// check if file was uploaded
+if (!isset($_FILES['file'])) {
+    echo json_encode(['success' => false, 'message' => 'No file uploaded']);
+    exit;
+}
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
-    $file = $_FILES['csv_file'];
+// check if upload directory is writable
+if (!is_writable($upload_dir)) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Upload directory is not writable',
+        'upload_dir' => $upload_dir,
+        'is_writable' => is_writable($upload_dir)
+    ]);
+    exit;
+}
+
+
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $file = $_FILES['file'];
 
     // check file type
     $fileType = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
@@ -47,10 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
         exit;
     }
 
+
     // save the uploaded file to the server
     if (move_uploaded_file($file['tmp_name'], $filepath)) {
         // call the Python script to process the file
-        $python_script = $upload_dir . 'insert_data.py';
+        $python_script = $upload_dir . 'insertDataSpark.py';
 
         if (file_exists($python_script)) {
             $command = "python3 " . escapeshellarg($python_script) . " " . escapeshellarg($filepath) . " 2>&1";
@@ -73,8 +92,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
     } else {
         echo json_encode([
             'success' => false,
-            'message' => 'Failed to save file on server'
+            'message' => "Failed to save file on server. $filepath,upload_dir_exists: " . (file_exists($upload_dir) ? 'true' : 'false') . ", upload_dir_writable: " . (is_writable($upload_dir) ? 'true' : 'false') . ", parent_dir_writable: " . (is_writable(dirname($upload_dir)) ? 'true' : 'false') . ", php_user: " . get_current_user() . ", tmp_file_exists: " . (file_exists($file['tmp_name']) ? 'true' : 'false') . ", last_error: " . json_encode(error_get_last())
         ]);
+
+
     }
 } else {
     echo json_encode([

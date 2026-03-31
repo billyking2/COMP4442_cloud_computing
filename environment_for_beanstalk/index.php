@@ -4,7 +4,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   // Set JSON header 
   header('Content-Type: application/json');
 
-  $file = $_FILES['csv_file'];
+  error_log(print_r($_FILES, true));
+  error_log(print_r($_POST, true));
+  $file = $_FILES['file'];
 
   // Check upload error
   $file_error_message = $file['error'];
@@ -49,18 +51,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
   // check filename, only allow letters, numbers, underscores, dashes and dots
   if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $file['name'])) {
-    echo json_encode(['success' => false, 'message' => 'Filename can only contain letters, number, underscores, dashes and dots']);
+    echo json_encode([
+      'success' => false,
+      'message' => 'Filename can only contain letters, number, underscores, dashes and dots'
+    ]);
+    exit;
+  }
+
+  $pattern = '/^detail_record_\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}(\.(csv|txt))?$/i';
+
+  if (!preg_match($pattern, $file['name'])) {
+    echo json_encode([
+      'success' => false,
+      'message' => 'Filename must follow the format: detail_record_YYYY_MM_DD_HH_MM_SS.csv (or .txt)'
+    ]);
     exit;
   }
 
   // send to ec2 server
-  $remote_url = 'http://ec2-18-214-80-27.compute-1.amazonaws.com/upload-api/upload_api.php';
+  $remote_url = 'http://ec2-18-214-80-27.compute-1.amazonaws.com/api/upload_api.php';
 
   $ch = curl_init();
   curl_setopt($ch, CURLOPT_URL, $remote_url);
   curl_setopt($ch, CURLOPT_POST, true);
   curl_setopt($ch, CURLOPT_POSTFIELDS, [
-    'csv_file' => new CURLFile($file['tmp_name'], $file['type'], $file['name'])
+    'file' => new CURLFile($file['tmp_name'], $file['type'], $file['name'])
   ]);
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
   curl_setopt($ch, CURLOPT_TIMEOUT, 60);
@@ -73,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   if ($curl_error) {
     echo json_encode([
       'success' => false,
-      'message' => 'Failed to connect to remote server: ' . $curl_error
+      'message' => 'Failed to connect to remote server(upload_api): ' . $curl_error
     ]);
     exit;
   }
@@ -97,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <html lang="en">
 
 <head>
-
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <title>COMP4442-group-project</title>
   <style>
     /* global styles */
@@ -403,7 +418,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <th>Hthrottle Stop instances</th>
                 <th>oil Leak instances</th>
                 <th>Total number of dangerous events</th>
-                <th>Total number of dangerous events</th>
               </tr>
             </thead>
             <tbody id="summaryBody">
@@ -416,14 +430,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       </div>
 
       <!-- diagram -->
+      <!-- diagram -->
       <div id="monitorTab" class="tab-content" style="display: none;">
         <div class="chart-container">
-          <canvas id="speedChart"></canvas>
+          <h3 style="text-align: center; margin-bottom: 15px;" id="chartTitle">Driving Speed Monitor</h3>
+          <canvas id="speedChart" height="100"></canvas>
         </div>
-        <div style="text-align: center; margin-top: 20px;">
-          <p> Chart auto-updates every 30 seconds </p>
+        <div style="text-align: center; margin-top: 15px; color: #666;">
+          <p>Chart auto-updates every 30 seconds</p>
         </div>
       </div>
+
     </div>
   </div>
 
@@ -441,7 +458,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
           <div> (Only one file can be uploaded at a time.) </div>
           <div class="file-info">Support: csv,txt format, max 10MB</div>
         </div>
-        <input type="file" id="csvFile" accept=".csv,.txt" style="display: none;" onchange="uploadFile(this.files[0])">
+        <input type="file" name="file" id="csvFile" accept=".csv,.txt" style="display: none;"
+          onchange="uploadFile(this.files[0])">
         <div id="uploadStatus" style="font-size: 12px; color: #666; text-align: center;"></div>
       </div>
     </div>
@@ -468,16 +486,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       if (!file) return;
 
       const formData = new FormData();
-      formData.append('csv_file', file);
+      formData.append('file', file);
 
       const uploadStatus = document.getElementById('uploadStatus');
       uploadStatus.innerHTML = 'Uploading...';
 
-
       try {
         const response = await fetch(window.location.href, {
           method: 'POST',
-          body: formData
+          body: formData,
         });
         const result = await response.json();
 
@@ -582,7 +599,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       }
     }
 
-
+    // get driving behavior information 
     document.getElementById('timeForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -595,7 +612,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         return;
       }
 
-      // get driving behavior information
+      // call to get driving behavior information
       try {
         const response = await fetch('http://18.214.80.27:5000/api/get_driving_behavior_information', {
           method: 'POST',
@@ -658,9 +675,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
       tabs.forEach(tab => tab.classList.remove('active'));
 
-
-
-
       if (tabName === 'summary') {
         summaryTab.style.display = 'block';
         tabs[0].classList.add('active');
@@ -686,28 +700,139 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       }
     }
 
-    function updateSpeedChart() {
-      const currentStart = document.getElementById('startTime').value;
-      const currentEnd = document.getElementById('endTime').value;
-      const currentDriver = document.getElementById('driverSelect').value;
 
-      if (currentStart && currentEnd) {
-        updateSpeedChart(currentStart, currentEnd, currentDriver);
+    let speedChartInstance = null;
+    let updateInterval = null;
+    const SPEED_LIMIT = 80;
+
+    async function updateSpeedChart() {
+      const startTime = document.getElementById('startTime').value;
+      const endTime = document.getElementById('endTime').value;
+      const driverId = document.getElementById('driverSelect').value;
+
+      // send request
+      if (!startTime || !endTime || driverId === "all") {
+        document.getElementById('chartTitle').textContent = "Please select a specific driver";
+        return;
+      }
+
+      try {
+        const response = await fetch('http://18.214.80.27:5000/api/get_speed_data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            start_time: startTime,
+            end_time: endTime,
+            driver_id: driverId
+          })
+        });
+
+        const result = await response.json();
+
+        // check speed data 
+        if (!result.success || !result.data || result.data.length === 0) {
+          document.getElementById('chartTitle').textContent = `No speed data for Driver ${driverId}`;
+          if (speedChartInstance) speedChartInstance.data.datasets[0].data = [];
+          if (speedChartInstance) speedChartInstance.update();
+          return;
+        }
+
+        document.getElementById('chartTitle').textContent = `Driver ${driverId} -  Speed Monitoring`;
+
+        const record_times = result.data.map(row => row.record_time);
+        const record_speeds = result.data.map(row => parseFloat(row.speed) || 0);
+
+
+        // overspeed
+        isSpeeding = record_speeds.some(speed => speed > SPEED_LIMIT);
+
+        if (isSpeeding) {
+          showAlert("Driver " + driverId + " is SPEEDING!", 'error');
+        }
+
+        // make diagram
+        if (!speedChartInstance) {
+          // first time initialization
+          const ctx = document.getElementById('speedChart').getContext('2d');
+          speedChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: record_times,
+              datasets: [
+                {
+                  label: 'Speed (km/h)',
+                  data: record_speeds,
+                  borderColor: '#e74c3c',
+                  backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                  borderWidth: 3,
+                  tension: 0.2,
+                  pointRadius: 2
+                },
+                {
+                  label: 'Speed Limit',
+                  data: new Array(record_times.length).fill(SPEED_LIMIT),
+                  borderColor: '#f1c40f',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  pointRadius: 0
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: {
+                  type: 'time',
+                  time: {
+                    unit: 'minute',
+                    displayFormats: {
+                      minute: 'HH:mm'
+                    }
+                  },
+                  title: { display: true, text: 'Time' }
+                },
+                y: {
+                  beginAtZero: true,
+                  title: { display: true, text: 'Speed (km/h)' }
+                }
+              },
+              plugins: {
+                legend: { position: 'top' },
+                tooltip: {
+                  mode: 'index',
+                  intersect: false
+                }
+              }
+            }
+          });
+        } else {
+          // update existing chart
+          speedChartInstance.data.labels = record_times;
+          speedChartInstance.data.datasets[0].data = record_speeds;
+          speedChartInstance.data.datasets[1].data = new Array(record_times.length).fill(SPEED_LIMIT);
+          speedChartInstance.update();
+        }
+
+      } catch (error) {
+        console.error('Error fetching speed data:', error);
+        document.getElementById('chartTitle').textContent = "Error loading speed data";
       }
     }
+
 
 
     function showAlert(message, type = 'error') {
       alert(message);
     }
 
-    // Initialize
+    // initialize
     window.onload = () => {
       setDefaultDates();
       loadDrivers();
     };
 
-    // Close modal when clicking outside
+    // close modal when clicking outside
     window.onclick = (event) => {
       const modal = document.getElementById('uploadModal');
       if (event.target === modal) {
