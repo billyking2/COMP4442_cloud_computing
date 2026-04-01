@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, sum as _sum
 import os
 
 app = Flask(__name__)
+CORS(app)
 
 # JDBC configuration
 JDBC_URL = "jdbc:mysql://comp4442-group-project.co9yvkeoopsc.us-east-1.rds.amazonaws.com:3306/COMP4442_group_project"

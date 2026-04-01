@@ -6,12 +6,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     error_log(print_r($_FILES, true));
     error_log(print_r($_POST, true));
-    
+
     if (!isset($_FILES['file'])) {
         echo json_encode(['success' => false, 'message' => 'No file uploaded - file field not found']);
         exit;
     }
-    
+
     $file = $_FILES['file'];
 
     // Check upload error
@@ -38,8 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if (!in_array($fileType, $allowed_types)) {
         echo json_encode([
-        'success' => false,
-        'message' => 'Only .csv, .txt files or files without extension are allowed (got .' . $fileType . ')'
+            'success' => false,
+            'message' => 'Only .csv, .txt files or files without extension are allowed (got .' . $fileType . ')'
         ]);
         exit;
     }
@@ -53,8 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // check filename, only allow letters, numbers, underscores, dashes and dots
     if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $file['name'])) {
         echo json_encode([
-        'success' => false,
-        'message' => 'Filename can only contain letters, number, underscores, dashes and dots'
+            'success' => false,
+            'message' => 'Filename can only contain letters, number, underscores, dashes and dots'
         ]);
         exit;
     }
@@ -63,15 +63,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if (!preg_match($pattern, $file['name'])) {
         echo json_encode([
-        'success' => false,
-        'message' => 'Filename must follow the format: detail_record_YYYY_MM_DD_HH_MM_SS.csv (or .txt)'
+            'success' => false,
+            'message' => 'Filename must follow the format: detail_record_YYYY_MM_DD_HH_MM_SS.csv (or .txt)'
         ]);
         exit;
     }
-    
+
     // Send to EC2 server
     $remote_url = 'http://ec2-18-214-80-27.compute-1.amazonaws.com/api/upload_api.php';
-    
+
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $remote_url);
     curl_setopt($ch, CURLOPT_POST, true);

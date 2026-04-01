@@ -70,9 +70,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (move_uploaded_file($file['tmp_name'], $filepath)) {
         // call the Python script to process the file
         $python_script = $upload_dir . 'insertDataSpark.py';
+        $jar_path = '/home/ec2-user/spark/jars/mysql-connector-j-8.0.33.jar';
+
 
         if (file_exists($python_script)) {
-            $command = "python3 " . escapeshellarg($python_script) . " " . escapeshellarg($filepath) . " 2>&1";
+            $command = "spark-submit " .
+                "--master local[*] " .
+                "--jars " . escapeshellarg($jar_path) . " " .
+                "--driver-class-path " . escapeshellarg($jar_path) . " " .
+                escapeshellarg($python_script) . " " .
+                escapeshellarg($filepath) . " 2>&1";
+
             exec($command, $output, $return_var);
 
             echo json_encode([

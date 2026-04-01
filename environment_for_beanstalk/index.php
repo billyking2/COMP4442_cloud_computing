@@ -320,7 +320,6 @@
       </div>
 
       <!-- diagram -->
-      <!-- diagram -->
       <div id="monitorTab" class="tab-content" style="display: none;">
         <div class="chart-container">
           <h3 style="text-align: center; margin-bottom: 15px;" id="chartTitle">Driving Speed Monitor</h3>
@@ -339,7 +338,7 @@
   <div id="uploadModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3> Upload CSV File</h3>
+        <h3> Upload File</h3>
         <span class="close-modal" onclick="closeUploadModal()">&times;</span>
       </div>
       <div class="modal-body">
@@ -459,7 +458,9 @@
     }
 
     // get driver list and update driver select options
-    async function loadDrivers(startTime = null, endTime = null) {
+    async function loadDrivers() {
+      const startTime = document.getElementById('startTime').value;
+      const endTime = document.getElementById('endTime').value;
       try {
         const response = await fetch('http://18.214.80.27:5000/api/get_drivers', {
           method: 'POST',
@@ -522,7 +523,7 @@
           showAlert('Failed to get data: ' + (data.message || 'Unknown error'), 'error');
           tbody.innerHTML = '<tr><td colspan="12" style="text-align: center;">No data found</td></tr>';
         }
-        await loadDrivers(startTime, endTime);
+        await loadDrivers();
 
       } catch (error) {
         console.error('Error:', error);

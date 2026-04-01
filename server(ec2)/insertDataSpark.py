@@ -4,7 +4,13 @@ import os
 import sys
 import re
 
-ss = SparkSession.builder.appName("importDataToSQL").getOrCreate()
+ss = SparkSession.builder \
+    .appName("importDataToSQL") \
+    .master("local[*]") \
+    .config("spark.jars", "/home/ec2-user/spark/jars/mysql-connector-j-8.0.33.jar") \
+    .config("spark.driver.extraClassPath", "/home/ec2-user/spark/jars/mysql-connector-j-8.0.33.jar") \
+    .config("spark.executor.extraClassPath", "/home/ec2-user/spark/jars/mysql-connector-j-8.0.33.jar") \
+    .getOrCreate()
 
 
 jdbc_url = "jdbc:mysql://comp4442-group-project.co9yvkeoopsc.us-east-1.rds.amazonaws.com:3306/COMP4442_group_project?rewriteBatchedStatements=true"
