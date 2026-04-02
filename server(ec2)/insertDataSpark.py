@@ -100,7 +100,8 @@ def parseData(df):
 
       when(col("parts").getItem(6) != "", col("parts").getItem(6)).otherwise(lit(None)).alias("siteName"),
 
-      when(col("parts").getItem(7) != "", col("parts").getItem(7)).otherwise(lit(None)).alias("Time"),
+      when(col("parts").getItem(7) != "", col("parts").getItem(7).cast("timestamp")).otherwise(lit(None)).alias("record_time"),
+
 
       # Some records only have 8 element
       when(col("field_count") > 8,

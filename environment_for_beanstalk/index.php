@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+  <meta charset="UTF-8">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <title>COMP4442-group-project</title>
   <style>
@@ -323,10 +324,15 @@
       <div id="monitorTab" class="tab-content" style="display: none;">
         <div class="chart-container">
           <h3 style="text-align: center; margin-bottom: 15px;" id="chartTitle">Driving Speed Monitor</h3>
-          <canvas id="speedChart" height="100"></canvas>
-        </div>
-        <div style="text-align: center; margin-top: 15px; color: #666;">
-          <p>Chart auto-updates every 30 seconds</p>
+
+          <!-- Fixed height container -->
+          <div style="position: relative; height: 420px; width: 100%;">
+            <canvas id="speedChart"></canvas>
+          </div>
+
+          <div id="diagraminfo" style="text-align: center; margin-top: 15px; color: #666;">
+            <p>Speed monitoring is only available for individual drivers. • Auto-sliding every 30 seconds</p>
+          </div>
         </div>
       </div>
 
@@ -379,7 +385,7 @@
 
       const uploadStatus = document.getElementById('uploadStatus');
       uploadStatus.innerHTML = 'Uploading...';
-
+      // connect to upload.php
       try {
         const response = await fetch('upload.php', {
           method: 'POST',
@@ -387,6 +393,7 @@
         });
         const result = await response.json();
 
+        // get result success
         if (result.success) {
 
           uploadStatus.innerHTML = result.message;
@@ -410,12 +417,13 @@
 
             showAlert(errorMessage, 'error');
 
-
             setTimeout(() => {
               if (uploadStatus.innerHTML.includes('already exists')) {
                 uploadStatus.innerHTML = '';
               }
             }, 1000);
+
+            // handle for other errors
           } else {
             uploadStatus.innerHTML = errorMessage;
             uploadStatus.style.color = 'red';
@@ -426,6 +434,7 @@
             }, 1000);
           }
         }
+        // unexpected error 
       } catch (error) {
         console.error('Upload error:', error);
         uploadStatus.innerHTML = ' Upload failed: ' + error.message;
@@ -471,9 +480,8 @@
           })
         });
 
-
         const data = await response.json();
-
+        // update driver select options
         if (data.success) {
           const select = document.getElementById('driverSelect');
           select.innerHTML = '<option value="all">all driver</option>';
@@ -481,7 +489,7 @@
           data.drivers.forEach(driver => {
             const option = document.createElement('option');
             option.value = driver;
-            option.textContent = `Driver ${driver}`;
+            option.textContent = `${driver}`;
             select.appendChild(option);
           });
         }
@@ -531,7 +539,7 @@
       }
     });
 
-
+    // display data in table
     function displaySummary(data) {
       const tbody = document.getElementById('summaryBody');
       if (!data || data.length === 0) {
@@ -542,7 +550,7 @@
       tbody.innerHTML = data.map(row => `
         <tr>
           <td>${row.driverID || '-'}</td>
-          <td>${row.car_plate_number || '-'}</td>
+          <td>${row.carPlateNumber ? row.carPlateNumber : '-'}</td>
           <td>${row.count_overspeed || 0}</td>
           <td>${row.time_overspeed || 0}</td>
           <td>${row.count_fatigueDriving || 0}</td>
@@ -558,7 +566,7 @@
     }
 
 
-
+    // tab switching 
     function showTab(tabName) {
       const summaryTab = document.getElementById('summaryTab');
       const monitorTab = document.getElementById('monitorTab');
@@ -581,13 +589,7 @@
         monitorTab.style.display = 'block';
         tabs[1].classList.add('active');
 
-        updateSpeedChart();
-
-        if (updateInterval) clearInterval(updateInterval);
-
-        updateInterval = setInterval(() => {
-          updateSpeedChart();
-        }, 30000);
+        updateSpeedChart(true);
       }
     }
 
@@ -595,119 +597,180 @@
     let speedChartInstance = null;
     let updateInterval = null;
     const SPEED_LIMIT = 80;
+    let all_speed_data = [];
+    let window_index = 0;
+    const WINDOW_SIZE_MINUTES = 1;
+    const SLIDE_INTERVAL = 30000;
 
-    async function updateSpeedChart() {
+    // get speed data and update diagram
+    async function updateSpeedChart(resetWindow = true) {
       const startTime = document.getElementById('startTime').value;
       const endTime = document.getElementById('endTime').value;
-      const driverId = document.getElementById('driverSelect').value;
+      const driver_id = document.getElementById('driverSelect').value;
 
       // send request
-      if (!startTime || !endTime || driverId === "all") {
+      if (!startTime || !endTime || driver_id === "all") {
         document.getElementById('chartTitle').textContent = "Please select a specific driver";
+
         return;
       }
 
       try {
+        //send request
         const response = await fetch('http://18.214.80.27:5000/api/get_speed_data', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             start_time: startTime,
             end_time: endTime,
-            driver_id: driverId
+            driver_id: driver_id
           })
         });
 
         const result = await response.json();
+        document.getElementById('chartTitle').textContent = "";
 
         // check speed data 
-        if (!result.success || !result.data || result.data.length === 0) {
-          document.getElementById('chartTitle').textContent = `No speed data for Driver ${driverId}`;
-          if (speedChartInstance) speedChartInstance.data.datasets[0].data = [];
-          if (speedChartInstance) speedChartInstance.update();
-          return;
-        }
-
-        document.getElementById('chartTitle').textContent = `Driver ${driverId} -  Speed Monitoring`;
-
-        const record_times = result.data.map(row => row.record_time);
-        const record_speeds = result.data.map(row => parseFloat(row.speed) || 0);
-
-
-        // overspeed
-        isSpeeding = record_speeds.some(speed => speed > SPEED_LIMIT);
-
-        if (isSpeeding) {
-          showAlert("Driver " + driverId + " is SPEEDING!", 'error');
-        }
-
-        // make diagram
-        if (!speedChartInstance) {
-          // first time initialization
-          const ctx = document.getElementById('speedChart').getContext('2d');
-          speedChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: record_times,
-              datasets: [
-                {
-                  label: 'Speed (km/h)',
-                  data: record_speeds,
-                  borderColor: '#e74c3c',
-                  backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                  borderWidth: 3,
-                  tension: 0.2,
-                  pointRadius: 2
-                },
-                {
-                  label: 'Speed Limit',
-                  data: new Array(record_times.length).fill(SPEED_LIMIT),
-                  borderColor: '#f1c40f',
-                  borderWidth: 2,
-                  borderDash: [5, 5],
-                  pointRadius: 0
-                }
-              ]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              scales: {
-                x: {
-                  type: 'time',
-                  time: {
-                    unit: 'minute',
-                    displayFormats: {
-                      minute: 'HH:mm'
-                    }
-                  },
-                  title: { display: true, text: 'Time' }
-                },
-                y: {
-                  beginAtZero: true,
-                  title: { display: true, text: 'Speed (km/h)' }
-                }
-              },
-              plugins: {
-                legend: { position: 'top' },
-                tooltip: {
-                  mode: 'index',
-                  intersect: false
-                }
-              }
-            }
-          });
+        if (result.success && result.data && result.data.length > 0) {
+          // store all speed data 
+          all_speed_data = result.data.map(row => ({
+            time: new Date(row.record_time),
+            speed: parseFloat(row.speed) || 0
+          }));
+          showCurrentWindow();
         } else {
-          // update existing chart
-          speedChartInstance.data.labels = record_times;
-          speedChartInstance.data.datasets[0].data = record_speeds;
-          speedChartInstance.data.datasets[1].data = new Array(record_times.length).fill(SPEED_LIMIT);
-          speedChartInstance.update();
+          // no speed data 
+          document.getElementById('chartTitle').textContent = `No speed data for Driver ${driver_id}`;
         }
+
+        document.getElementById('chartTitle').textContent = `Driver ${driver_id} -  Speed Monitoring`;
+
+        if (resetWindow) {
+          window_index = 0;
+        }
+
+        showCurrentWindow();
+
+        // refresh every 30s
+        if (updateInterval) clearInterval(updateInterval);
+        updateInterval = setInterval(() => {
+          window_index += 1;
+          showCurrentWindow();
+        }, SLIDE_INTERVAL);
 
       } catch (error) {
         console.error('Error fetching speed data:', error);
         document.getElementById('chartTitle').textContent = "Error loading speed data";
+      }
+    }
+
+    // show current WINDOW_SIZE_MINUTES 
+    function showCurrentWindow() {
+      if (all_speed_data.length === 0) return;
+
+      const windowMs = WINDOW_SIZE_MINUTES * 60 * 1000;
+      const baseStartTime = document.getElementById('startTime').valueAsDate;
+      let startIdx = window_index;
+
+      const windowStartTime = new Date(baseStartTime.getTime() + window_index * 60 * 1000);
+      const windowEndTime = new Date(windowStartTime.getTime() + windowMs);
+
+      // loop back at the end
+      const userEndTime = document.getElementById('endTime').valueAsDate;
+      if (windowStartTime >= userEndTime) {
+        window_index = 0;
+        return;
+      }
+
+      // get data in current window
+      const windowData = all_speed_data.filter(point =>
+        point.time >= windowStartTime && point.time < windowEndTime
+      );
+
+      if (windowData.length === 0) {
+        window_index++;
+        return;
+      }
+
+      const labels = windowData.map(p =>
+        p.time.toLocaleString('en', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        })
+      );
+
+      const speeds = windowData.map(p => p.speed);
+
+      // check overspeed
+      const is_overspeed = speeds.some(s => s > SPEED_LIMIT);
+      if (is_overspeed) {
+        showAlert(`Driver ${document.getElementById('driverSelect').value} is SPEEDING!`, 'error');
+      }
+
+      // handle time format
+      const timeFrom = windowStartTime.toLocaleString('en', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+      const timeTo = windowEndTime.toLocaleString('en', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+
+      const driver_id = document.getElementById('driverSelect').value;
+      document.getElementById('chartTitle').textContent =
+        `Driver ${driver_id} - ${timeFrom} - ${timeTo}`;
+
+      // diagram
+      if (!speedChartInstance) {
+        const ctx = document.getElementById('speedChart').getContext('2d');
+        speedChartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Speed (km/h)',
+                data: speeds,
+                borderColor: '#e74c3c',
+                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                borderWidth: 3,
+                tension: 0.2,
+                pointRadius: 2
+              },
+              {
+                label: 'Speed Limit (80 km/h)',
+                data: new Array(labels.length).fill(SPEED_LIMIT),
+                borderColor: '#f1c40f',
+                borderWidth: 2,
+                borderDash: [5, 5],
+                pointRadius: 0
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                title: { display: true, text: 'Time' }
+              },
+              y: {
+                beginAtZero: true,
+                title: { display: true, text: 'Speed (km/h)' },
+                max: 200
+              }
+            },
+            plugins: {
+              legend: { position: 'top' }
+            }
+          }
+        });
+      } else {
+        // refresh diagram data
+        speedChartInstance.data.labels = labels;
+        speedChartInstance.data.datasets[0].data = speeds;
+        speedChartInstance.data.datasets[1].data = new Array(labels.length).fill(SPEED_LIMIT);
+        speedChartInstance.update('none');
       }
     }
 

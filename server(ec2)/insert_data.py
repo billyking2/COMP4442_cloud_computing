@@ -4,10 +4,9 @@ from mysql.connector import Error
 import sys
 import os
 
-# Database configuration (your MySQL database)
+# database configuration 
 config = {
-    'host': 'comp4442-group-project.co9yvkeoopsc.us-east-1.rds.amazonaws.com',  # This is your database host (could be localhost if MySQL is on same EC2, or RDS endpoint)
-    'database': 'COMP4442_group_project',
+    'host': 'comp4442-group-project.co9yvkeoopsc.us-east-1.rds.amazonaws.com',  
     'user': 'admin',
     'password': 'Qweasdzxc1612',
     'port': 3306
@@ -15,11 +14,10 @@ config = {
 
 def parse_line(line):
     """Parse a line from the text file and return a tuple for database insertion"""
-    # Split the line by comma
+    # split the line by comma
     parts = line.strip().split(',')
     
-    # Map the fields based on your file structure
-    # The file has varying number of fields, so we need to handle missing values
+    # map the fields based on file structure
     driverID = parts[0] if len(parts) > 0 else None
     carPlateNumber = parts[1] if len(parts) > 1 else None
     latitude = parts[2] if len(parts) > 2 and parts[2] else None
@@ -29,7 +27,7 @@ def parse_line(line):
     siteName = parts[6] if len(parts) > 6 and parts[6] else None
     record_time = parts[7] if len(parts) > 7 and parts[7] else None
     
-    # Default values for the boolean/int fields
+
     isRapidlySpeedup = 0
     isRapidlySlowdown = 0
     isNeutralSlide = 0
@@ -43,8 +41,6 @@ def parse_line(line):
     isOilLeak = 0
     count_dangerEvent = None
     
-    # Map additional fields if they exist (positions 8-19 based on your data)
-    # Your data has varying lengths, so we need to handle the trailing fields
     if len(parts) > 8 and parts[8]:
         isRapidlySpeedup = int(parts[8]) if parts[8] else 0
     if len(parts) > 9 and parts[9]:
@@ -70,11 +66,11 @@ def parse_line(line):
     if len(parts) > 19 and parts[19]:
         count_dangerEvent = int(parts[19]) if parts[19] else None
     
-    # Convert latitude and longitude to Decimal
+    # convert latitude and longitude to Decimal
     latitude = float(latitude) if latitude else None
     longitude = float(longitude) if longitude else None
     
-    # Convert speed and direction to int
+    # convert speed and direction to int
     speed = int(speed) if speed else None
     direction = int(direction) if direction else None
     
@@ -89,9 +85,10 @@ def insert_data_from_file(filename):
     connection = None
     base_name = os.path.basename(filename)        
     table_name = os.path.splitext(base_name)[0]
+    table_name = table_name[0:21]  
     
     try:
-        # Connect to database
+        # connect to database
         connection = mysql.connector.connect(**config)
         
         if connection.is_connected():
@@ -105,9 +102,9 @@ def insert_data_from_file(filename):
             
             print(f"Checking/creating table: `{table_name}` (using template)")
             cursor.execute(create_table_query)
-            print(f"✅ Table `{table_name}` is ready.")
+            print(f" Table `{table_name}` is ready.")
             
-            # SQL INSERT statement
+            # sql insert 
             insert_query = f"""
             INSERT INTO `{table_name}` (
                 driverID, carPlateNumber, latitude, longitude, speed, direction,
@@ -122,7 +119,7 @@ def insert_data_from_file(filename):
             
             print(f"Inserting data into table: `{table_name}`")
             
-            # Read and process the file
+            # read and process the file
             records_to_insert = []
             line_count = 0
             error_count = 0
@@ -130,16 +127,16 @@ def insert_data_from_file(filename):
             with open(filename, 'r', encoding='utf-8') as file:
                 for line_num, line in enumerate(file, 1):
                     line = line.strip()
-                    if not line:  # Skip empty lines
+                    if not line:  
                         continue
                     
                     try:
-                        # Parse the line
+                        # parse the line
                         record = parse_line(line)
                         records_to_insert.append(record)
                         line_count += 1
                         
-                        # Optional: Insert in batches of 1000 to avoid memory issues
+                       
                         if len(records_to_insert) >= 1000:
                             cursor.executemany(insert_query, records_to_insert)
                             connection.commit()
@@ -151,7 +148,7 @@ def insert_data_from_file(filename):
                         print(f"Error parsing line {line_num}: {line}")
                         print(f"Error details: {e}")
             
-            # Insert any remaining records
+            # insert remaining records
             if records_to_insert:
                 cursor.executemany(insert_query, records_to_insert)
                 connection.commit()

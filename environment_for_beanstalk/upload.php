@@ -1,7 +1,7 @@
 <?php
-// Handle file upload 
+// handle file upload 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Set JSON header 
+    // set JSON header 
     header('Content-Type: application/json');
 
     error_log(print_r($_FILES, true));
@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $file = $_FILES['file'];
 
-    // Check upload error
+    // check upload error
     $file_error_message = $file['error'];
     if ($file_error_message !== UPLOAD_ERR_OK) {
         $errors = [
@@ -44,8 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         exit;
     }
 
-    // Check file size (max 10MB)
-    if ($file['size'] > 10 * 1024 * 1024) {
+    // check file size (max 100MB)
+    if ($file['size'] > 100 * 1024 * 1024) {
         echo json_encode(['success' => false, 'message' => 'File too large (max 10MB)']);
         exit;
     }
@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         exit;
     }
 
-    // Send to EC2 server
+    // send to EC2 server
     $remote_url = 'http://ec2-18-214-80-27.compute-1.amazonaws.com/api/upload_api.php';
 
     $ch = curl_init();
