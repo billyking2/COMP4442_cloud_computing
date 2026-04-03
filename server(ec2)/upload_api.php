@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // save the uploaded file to the server
     if (move_uploaded_file($file['tmp_name'], $filepath)) {
         // call the Python script to process the file
-        $python_script = $upload_dir . 'insertDataSpark.py';
+        $python_script = $upload_dir . 'insert_data.py';
         $jar_path = '/home/ec2-user/spark/jars/mysql-connector-j-8.0.33.jar';
 
 
