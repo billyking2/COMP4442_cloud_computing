@@ -3,6 +3,7 @@ from flask_cors import CORS
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, sum as _sum, when
 from pyspark.sql.functions import col, lit, to_timestamp
+from functools import reduce
 import os
 import sys 
 sys.stdout.reconfigure(encoding='utf-8')
@@ -24,6 +25,8 @@ def get_spark():
             .appName("DriverBehaviorAPI") \
             .config("spark.sql.adaptive.enabled", "true") \
             .config("spark.sql.legacy.timeParserPolicy", "LEGACY") \
+            .config("spark.driver.memory", "4g") \
+            .config("spark.executor.memory", "4g") \
             .getOrCreate()
     return spark
 
@@ -66,32 +69,71 @@ def normalize_timestamp(ts_str: str) -> str:
     
     return ts
 
+
 # read multiple tables and union them into one dataframe
-def read_tables(spark, table_names):
+def read_tables(spark, table_names, start_time, end_time, driver_id):
     if not table_names:
         return None
     
+    if driver_id == "all":
+        query = f"""
+                SELECT * FROM {table_name}
+                WHERE record_time >= '{start_time}' 
+                  AND record_time <= '{end_time}'
+            """
+    elif driver_id == None:
+        query = f"""
+                SELECT driverID FROM {table_name}
+                WHERE record_time >= '{start_time}' 
+                  AND record_time <= '{end_time}'
+            """
+    else:
+        query = f"""
+                SELECT * FROM {table_name}
+                WHERE record_time >= '{start_time}' 
+                  AND record_time <= '{end_time}' 
+                  AND driverID = '{driver_id}'
+            """
+                
     dfs = []
+    successful = []
+    failed = []
+
     for table_name in table_names:
         try:
             df = spark.read.format("jdbc") \
                 .option("url", JDBC_URL) \
+                .option("query", query) \
                 .option("dbtable", table_name) \
                 .option("user", JDBC_USER) \
                 .option("password", JDBC_PASSWORD) \
                 .load()
+            
             dfs.append(df)
+            successful.append(table_name)
+            print(f"Successfully loaded table: {table_name} ({df.count()} rows)")
+            
         except Exception as e:
-            print(f"Error reading {table_name}: {e}")
-    
+            failed.append(table_name)
+            print(f"Failed to read {table_name}: {e}")
+
     if not dfs:
+        print("No tables could be read successfully.")
         return None
-    
-    # union all dataframes
-    result_df = dfs[0]
-    for df in dfs[1:]:
-        result_df = result_df.union(df)
-    
+
+    if len(dfs) == 1:
+        result_df = dfs[0]
+    else:
+        result_df = reduce(
+            lambda x, y: x.unionByName(y, allowMissingColumns=True), 
+            dfs
+        )
+
+    result_df = result_df.cache()
+    print(f"Union completed: {len(successful)} tables loaded successfully.")
+    if failed:
+        print(f"Failed tables: {failed}")
+
     return result_df
 
 
@@ -109,9 +151,9 @@ def get_drivers():
     
     try:
     
-        df = read_tables(spark, tables_names)
+        df = read_tables(spark, tables_names, start_time, end_time, driver_id=None)
         if df is None:
-            return jsonify({"success": False, "message": "No data found"})
+            return jsonify({"success": False, "message": "No data found for the given period"})
         
         start_ts_str = normalize_timestamp(start_time)
         end_ts_str   = normalize_timestamp(end_time)
@@ -127,7 +169,7 @@ def get_drivers():
     
     except Exception as e:
         print(f"Error in get_drivers: {e}")
-        return jsonify({"success": False, "message": f"Server error: {str(e)}"}), 500
+        return jsonify({"success": False, "message": f"Server error: {str(e)}"}), 400
 
 @app.route('/api/get_driving_behavior_information', methods=['POST'])
 def get_driving_behavior_information():
@@ -144,7 +186,7 @@ def get_driving_behavior_information():
     tables_names = handle_time(start_time, end_time)
     
     try:
-        df = read_tables(spark, tables_names)
+        df = read_tables(spark, tables_names, start_time, end_time, driver_id)
         if df is None:
             return jsonify({"success": False, "message": "No data found"})
         
@@ -195,7 +237,7 @@ def get_driving_behavior_information():
         return jsonify({"success": True, "data": result})
     except Exception as e:
         print(f"Error in get_driving_behavior_information: {e}")
-        return jsonify({"success": False, "message": f"Server error: {str(e)}"}), 500
+        return jsonify({"success": False, "message": f"Server error: {str(e)}"}), 400
 
 @app.route('/api/get_speed_data', methods=['POST'])
 def get_speed_data():
@@ -211,7 +253,7 @@ def get_speed_data():
     tables_names = handle_time(start_time, end_time)
     
     try:
-        df = read_tables(spark, tables_names)
+        df = read_tables(spark, tables_names, start_time, end_time, driver_id)
         if df is None:
             return jsonify({"success": False, "message": "No data found"})
         
@@ -237,7 +279,7 @@ def get_speed_data():
         })
     except Exception as e:
         print(f"Error in get_speed_data: {e}")
-        return jsonify({"success": False, "message": f"Server error: {str(e)}"}), 500
+        return jsonify({"success": False, "message": f"Server error: {str(e)}"}), 400
     
     
 if __name__ == '__main__':
