@@ -600,7 +600,7 @@
     const SPEED_LIMIT = 80;
     let all_speed_data = [];
     let window_index = 0;
-    const WINDOW_SIZE_MINUTES = 1;
+    const WINDOW_SIZE_MINUTES = 5;
     const SLIDE_INTERVAL = 30000;
 
     // get speed data and update diagram
@@ -635,8 +635,9 @@
         if (result.success && result.data && result.data.length > 0) {
           // store all speed data 
           all_speed_data = result.data.map(row => ({
-            time: new Date(row.record_time),
-            speed: parseFloat(row.speed) || 0
+            time: new Date(row.Time),
+            speed: parseFloat(row.Speed) || 0
+            isOverSpeed: Boolean(row.isOverSpeed)
           }));
           showCurrentWindow();
         } else {
@@ -704,7 +705,7 @@
       const speeds = windowData.map(p => p.speed);
 
       // check overspeed
-      const is_overspeed = speeds.some(s => s > SPEED_LIMIT);
+      const is_overspeed = windowData.some(p => p.isOverSpeed);
       if (is_overspeed) {
         showAlert(`Driver ${document.getElementById('driverSelect').value} is SPEEDING!`, 'error');
       }
@@ -737,14 +738,8 @@
                 borderWidth: 3,
                 tension: 0.2,
                 pointRadius: 2
-              },
-              {
-                label: 'Speed Limit (80 km/h)',
-                data: new Array(labels.length).fill(SPEED_LIMIT),
-                borderColor: '#f1c40f',
-                borderWidth: 2,
-                borderDash: [5, 5],
-                pointRadius: 0
+                pointBackgroundColor: windowData.map(p => p.isOverSpeed ? '#e74c3c' : '#3498db')
+
               }
             ]
           },
@@ -753,7 +748,9 @@
             maintainAspectRatio: false,
             scales: {
               x: {
-                title: { display: true, text: 'Time' }
+                title: {
+                  display: true, text: 'Time'
+                }
               },
               y: {
                 beginAtZero: true,
@@ -763,6 +760,11 @@
             },
             plugins: {
               legend: { position: 'top' }
+            },
+            elements: {
+              point: {
+                radius: 3
+              }
             }
           }
         });
@@ -770,12 +772,11 @@
         // refresh diagram data
         speedChartInstance.data.labels = labels;
         speedChartInstance.data.datasets[0].data = speeds;
-        speedChartInstance.data.datasets[1].data = new Array(labels.length).fill(SPEED_LIMIT);
+        speedChartInstance.data.datasets[0].pointBackgroundColor =
+          windowData.map(p => p.isOverSpeed ? '#e74c3c' : '#3498db');
         speedChartInstance.update('none');
       }
     }
-
-
 
     function showAlert(message, type = 'error') {
       alert(message);

@@ -75,36 +75,25 @@ def read_tables(spark, table_names, start_time, end_time, driver_id):
     if not table_names:
         return None
     
-    if driver_id == "all":
-        query = f"""
-                SELECT * FROM {table_name}
-                WHERE record_time >= '{start_time}' 
-                  AND record_time <= '{end_time}'
-            """
-    elif driver_id == None:
-        query = f"""
-                SELECT driverID FROM {table_name}
-                WHERE record_time >= '{start_time}' 
-                  AND record_time <= '{end_time}'
-            """
-    else:
-        query = f"""
-                SELECT * FROM {table_name}
-                WHERE record_time >= '{start_time}' 
-                  AND record_time <= '{end_time}' 
-                  AND driverID = '{driver_id}'
-            """
+
                 
     dfs = []
     successful = []
     failed = []
 
     for table_name in table_names:
+       
+        if driver_id == "all":
+            query = f"(SELECT * FROM {table_name} WHERE Time >= '{start_time}' AND Time <= '{end_time}') "
+        elif driver_id is None:
+            query = f"(SELECT driverID FROM {table_name} WHERE Time >= '{start_time}' AND Time <= '{end_time}') "
+        else:
+            query = f"(SELECT Time, Speed, isOverSpeed FROM {table_name} WHERE Time >= '{start_time}' AND Time <= '{end_time}' AND driverID = '{driver_id}') "
+
         try:
             df = spark.read.format("jdbc") \
                 .option("url", JDBC_URL) \
-                .option("query", query) \
-                .option("dbtable", table_name) \
+                .option("dbtable", query) \
                 .option("user", JDBC_USER) \
                 .option("password", JDBC_PASSWORD) \
                 .load()
@@ -162,8 +151,9 @@ def get_drivers():
             (col("record_time") >= to_timestamp(lit(start_ts_str), "yyyy-MM-dd HH:mm:ss")) &
             (col("record_time") <= to_timestamp(lit(end_ts_str),   "yyyy-MM-dd HH:mm:ss"))
         )
-
-        drivers = filtered.select("driverID").distinct().orderBy("driverID").toPandas()['driverID'].tolist()
+        
+        driver_rows = df.select("driverID").distinct().orderBy("driverID").collect()
+        drivers = [row.driverID for row in driver_rows]
     
         return jsonify({"success": True, "drivers": drivers})
     
@@ -222,7 +212,8 @@ def get_driving_behavior_information():
             col("count_hthrottleStop") + col("count_oilLeak")
         )
         
-        result = [row.asDict() for row in summary.collect()]
+        rows = summary.collect()
+        result = [row.asDict() for row in rows]
         
         # convert none to 0
         for row in result:
@@ -266,7 +257,7 @@ def get_speed_data():
             (col("driverID") == driver_id)
         )
         
-        speed_data = filtered.select("record_time", "speed") \
+        speed_data = filtered.select("Time", "Speed" , "isOverSpeed") \
                             .orderBy("record_time") \
                             .toPandas()
         
