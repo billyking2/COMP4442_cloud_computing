@@ -1,4 +1,3 @@
-<? php ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -472,7 +471,7 @@
       const startTime = document.getElementById('startTime').value;
       const endTime = document.getElementById('endTime').value;
       try {
-        const response = await fetch('http://18.214.80.27:5000/api/get_drivers', {
+        const response = await fetch('http://18.214.80.27:8080/api/get_drivers', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -514,7 +513,7 @@
 
       // call to get driving behavior information
       try {
-        const response = await fetch('http://18.214.80.27:5000/api/get_driving_behavior_information', {
+        const response = await fetch('http://18.214.80.27:8080/api/get_driving_behavior_information', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -597,7 +596,6 @@
 
     let speedChartInstance = null;
     let updateInterval = null;
-    const SPEED_LIMIT = 80;
     let all_speed_data = [];
     let window_index = 0;
     const WINDOW_SIZE_MINUTES = 5;
@@ -618,7 +616,7 @@
 
       try {
         //send request
-        const response = await fetch('http://18.214.80.27:5000/api/get_speed_data', {
+        const response = await fetch('http://18.214.80.27:8080/api/get_speed_data', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -636,7 +634,7 @@
           // store all speed data 
           all_speed_data = result.data.map(row => ({
             time: new Date(row.Time),
-            speed: parseFloat(row.Speed) || 0
+            speed: parseFloat(row.Speed) || 0,
             isOverSpeed: Boolean(row.isOverSpeed)
           }));
           showCurrentWindow();
@@ -737,7 +735,7 @@
                 backgroundColor: 'rgba(231, 76, 60, 0.1)',
                 borderWidth: 3,
                 tension: 0.2,
-                pointRadius: 2
+                pointRadius: 2,
                 pointBackgroundColor: windowData.map(p => p.isOverSpeed ? '#e74c3c' : '#3498db')
 
               }

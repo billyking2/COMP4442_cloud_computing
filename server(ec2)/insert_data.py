@@ -9,7 +9,8 @@ config = {
     'host': 'comp4442-group-project.co9yvkeoopsc.us-east-1.rds.amazonaws.com',  
     'user': 'admin',
     'password': 'Qweasdzxc1612',
-    'port': 3306
+    'port': 3306,
+    'database': 'COMP4442_group_project'
 }
 
 def parse_line(line):
@@ -194,3 +195,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     insert_data_from_file(filename)
+    
+    print("__INSERT_SUCCESS__")
+    sys.exit(0)
+    
