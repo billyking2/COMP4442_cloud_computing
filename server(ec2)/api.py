@@ -1,5 +1,5 @@
 import json
-
+import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pyspark.sql import SparkSession
@@ -15,6 +15,16 @@ CORS(app, resources={r"/api/*": {"origins": "http://comp4442groupprojectfinal-en
 
 spark = None
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('/home/ec2-user/detail-records/api.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
 # JDBC configuration
 JDBC_URL = "jdbc:mysql://comp4442-group-project.co9yvkeoopsc.us-east-1.rds.amazonaws.com:3306/COMP4442_group_project"
 JDBC_USER = "admin"
@@ -22,15 +32,28 @@ JDBC_PASSWORD = "Qweasdzxc1612"
 
 def get_spark():
     global spark
-    if spark is None:
-        spark = SparkSession.builder \
+    if spark is None:   
+        jdbc_driver_path = "/home/ec2-user/detail-records/mysql-connector-j-8.0.33.jar"
+        if not os.path.exists(jdbc_driver_path):
+            jdbc_driver_path = os.path.join(os.path.dirname(__file__), "mysql-connector-j-8.0.33.jar")
+        builder = SparkSession.builder \
             .appName("DriverBehaviorAPI") \
             .config("spark.sql.adaptive.enabled", "true") \
             .config("spark.sql.legacy.timeParserPolicy", "LEGACY") \
             .config("spark.driver.memory", "4g") \
             .config("spark.executor.memory", "4g") \
-            .getOrCreate()
+            
 
+        if os.path.exists(jdbc_driver_path):
+            builder = builder.config("spark.jars", jdbc_driver_path)
+            print(f"Loaded JDBC driver from: {jdbc_driver_path}")
+        else:
+            print(f"WARNING: JDBC driver not found at {jdbc_driver_path}")
+            print("Please ensure mysql-connector-j-8.0.33.jar is in the current directory")
+        
+        spark = builder.getOrCreate()
+        print("Spark session created successfully")
+        
     return spark
 
 # base on start and end time to get the table names which need to query
@@ -76,6 +99,7 @@ def normalize_timestamp(ts_str: str) -> str:
 # read multiple tables and union them into one dataframe
 def read_tables(spark, table_names, start_time, end_time, driver_id):
     if not table_names:
+        logger.warning("No table names provided")
         return None
                 
     dfs = []
@@ -85,12 +109,15 @@ def read_tables(spark, table_names, start_time, end_time, driver_id):
     for table_name in table_names:
        
         if driver_id == "all":
-            query = f"(SELECT * FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}') "
+            query = f"(SELECT * FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}') as t "
         elif driver_id is None:
-            query = f"(SELECT driverID FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}') "
+            query = f"(SELECT driverID FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}') as t "
         else:
-            query = f"(SELECT record_time, speed, isOverspeed FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}' AND driverID = '{driver_id}') "
+            query = f"(SELECT record_time, speed, isOverspeed FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}' AND driverID = '{driver_id}') as t "
 
+        logger.info(f"Querying table: {table_name}")
+        logger.info(f"Query: {query}")
+        logger.info(f"Time range: {start_time} to {end_time}")
         try:
             df = spark.read.format("jdbc") \
                 .option("url", JDBC_URL) \
@@ -99,16 +126,24 @@ def read_tables(spark, table_names, start_time, end_time, driver_id):
                 .option("password", JDBC_PASSWORD) \
                 .load()
             
-            dfs.append(df)
-            successful.append(table_name)
-            print(f"Successfully loaded table: {table_name} ({df.count()} rows)")
+            row_count = df.count()
+            logger.info(f"Successfully loaded table: {table_name} ({row_count} rows)")
+            
+            if row_count > 0:
+                dfs.append(df)
+                successful.append(table_name)
+            else:
+                logger.warning(f"Table {table_name} returned 0 rows")
+                failed.append(table_name)
             
         except Exception as e:
             failed.append(table_name)
-            print(f"Failed to read {table_name}: {e}")
+            logger.error(f"Failed to read {table_name}: {e}")
+            continue
+   
 
     if not dfs:
-        print("No tables could be read successfully.")
+        logger.error("No tables could be read successfully.")
         return None
 
     if len(dfs) == 1:
@@ -120,9 +155,10 @@ def read_tables(spark, table_names, start_time, end_time, driver_id):
         )
 
     result_df = result_df.cache()
-    print(f"Union completed: {len(successful)} tables loaded successfully.")
+    logger.info(f"Union completed: {len(successful)} tables loaded successfully.")
     if failed:
         print(f"Failed tables: {failed}")
+        return e
 
     return result_df
 
@@ -144,13 +180,8 @@ def get_drivers():
         df = read_tables(spark, tables_names, normalize_timestamp(start_time), normalize_timestamp(end_time), driver_id=None)
         if df is None:
             return jsonify({"success": False, "message": "No data found for the given period "+f"({start_time} to {end_time})"})
-        
-
-
-        filtered = df.filter(
-            (col("record_time") >= to_timestamp(lit(normalize_timestamp(start_time)), "yyyy-MM-dd HH:mm:ss")) &
-            (col("record_time") <= to_timestamp(lit(normalize_timestamp(end_time)),   "yyyy-MM-dd HH:mm:ss"))
-        )
+        if isinstance(df, Exception):
+            return jsonify({"success": False, "message": f"Error reading tables: {str(df)}"})
         
         driver_rows = df.select("driverID").distinct().orderBy("driverID").collect()
         drivers = [row.driverID for row in driver_rows]
@@ -178,7 +209,7 @@ def get_driving_behavior_information():
     try:
         df = read_tables(spark, tables_names, normalize_timestamp(start_time), normalize_timestamp(end_time), driver_id)
         if df is None:
-            return jsonify({"success": False, "message": "No data found for the given period "+f"({start_time} to {end_time})"})
+            return jsonify({"success": False, "message": "No data found for the given period "+f"({start_time} to {end_time}) in tables_names:{tables_names}"})
         
         df.printSchema()
         

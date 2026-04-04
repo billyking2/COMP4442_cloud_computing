@@ -525,6 +525,14 @@
         });
 
         const data = await response.json();
+
+        if (!data.success) {
+          console.error("API error:", data.message);
+          alert(data.message);
+        } else {
+          console.log("API data:", data);
+        }
+
         if (data.success) {
           displaySummary(data.data);
         } else {
