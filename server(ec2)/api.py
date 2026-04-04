@@ -109,11 +109,11 @@ def read_tables(spark, table_names, start_time, end_time, driver_id):
     for table_name in table_names:
        
         if driver_id == "all":
-            query = f"(SELECT * FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}') as t "
+            query = f" SELECT * FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}';"
         elif driver_id is None:
-            query = f"(SELECT driverID FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}') as t "
+            query = f" SELECT driverID FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}'; "
         else:
-            query = f"(SELECT record_time, speed, isOverspeed FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}' AND driverID = '{driver_id}') as t "
+            query = f" SELECT record_time, speed, isOverspeed FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}' AND driverID = '{driver_id} ; "
 
         logger.info(f"Querying table: {table_name}")
         logger.info(f"Query: {query}")
