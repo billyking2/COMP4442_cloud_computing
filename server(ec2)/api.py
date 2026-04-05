@@ -40,12 +40,12 @@ def get_spark():
             .appName("DriverBehaviorAPI") \
             .config("spark.sql.adaptive.enabled", "true") \
             .config("spark.sql.legacy.timeParserPolicy", "LEGACY") \
-            .config("spark.driver.memory", "4g") \
-            .config("spark.executor.memory", "4g") \
+            .config("spark.driver.memory", "1g") \
+            .config("spark.executor.memory", "1g") \
             
 
         if os.path.exists(jdbc_driver_path):
-            builder = builder.config("spark.jars", jdbc_driver_path)
+            builder = builder.config("spark.jars", jdbc_driver_path).config("spark.driver.extraClassPath", jdbc_driver_path)
             print(f"Loaded JDBC driver from: {jdbc_driver_path}")
         else:
             print(f"WARNING: JDBC driver not found at {jdbc_driver_path}")
@@ -97,7 +97,7 @@ def normalize_timestamp(ts_str: str) -> str:
 
 
 # read multiple tables and union them into one dataframe
-def read_tables(spark, table_names, start_time, end_time, driver_id):
+def read_tables(spark, table_names, start_time, end_time, driver_id, column=None):
     if not table_names:
         logger.warning("No table names provided")
         return None
@@ -106,20 +106,26 @@ def read_tables(spark, table_names, start_time, end_time, driver_id):
     successful = []
     failed = []
 
+    if column is None:
+        select_clause = "*"
+    else:
+        select_clause = ", ".join(column)
+
     for table_name in table_names:
        
         if driver_id == "all":
-            query = f" SELECT * FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}';"
+            query = f"SELECT {select_clause} FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}'"
         elif driver_id is None:
-            query = f" SELECT driverID FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}'; "
+            query = f"SELECT driverID FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}'"
         else:
-            query = f" SELECT record_time, speed, isOverspeed FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}' AND driverID = '{driver_id} ; "
+            query = f"SELECT {select_clause} FROM {table_name} WHERE record_time >= '{start_time}' AND record_time <= '{end_time}' AND driverID = '{driver_id}'"
 
         logger.info(f"Querying table: {table_name}")
         logger.info(f"Query: {query}")
         logger.info(f"Time range: {start_time} to {end_time}")
         try:
             df = spark.read.format("jdbc") \
+                .option("driver", "com.mysql.cj.jdbc.Driver") \
                 .option("url", JDBC_URL) \
                 .option("query", query) \
                 .option("user", JDBC_USER) \
@@ -157,8 +163,7 @@ def read_tables(spark, table_names, start_time, end_time, driver_id):
     result_df = result_df.cache()
     logger.info(f"Union completed: {len(successful)} tables loaded successfully.")
     if failed:
-        print(f"Failed tables: {failed}")
-        return e
+        logger.warning(f"Failed tables: {failed}")
 
     return result_df
 
@@ -177,20 +182,18 @@ def get_drivers():
     
     try:
     
-        df = read_tables(spark, tables_names, normalize_timestamp(start_time), normalize_timestamp(end_time), driver_id=None)
+        df = read_tables(spark, tables_names, normalize_timestamp(start_time), normalize_timestamp(end_time), driver_id=None, column = None)
         if df is None:
             return jsonify({"success": False, "message": "No data found for the given period "+f"({start_time} to {end_time})"})
-        if isinstance(df, Exception):
-            return jsonify({"success": False, "message": f"Error reading tables: {str(df)}"})
         
         driver_rows = df.select("driverID").distinct().orderBy("driverID").collect()
         drivers = [row.driverID for row in driver_rows]
-    
         return jsonify({"success": True, "drivers": drivers})
-    
+        
     except Exception as e:
-        print(f"Error in get_drivers: {e}")
+        logger.error(f"Error in get_drivers: {e}")
         return jsonify({"success": False, "message": f"Server error: {str(e)}"}), 400
+
 
 @app.route('/api/get_driving_behavior_information', methods=['POST'])
 def get_driving_behavior_information():
@@ -205,18 +208,22 @@ def get_driving_behavior_information():
     spark = get_spark()
 
     tables_names = handle_time(start_time, end_time)
+
+    needed_columns = [
+        "driverID", "carPlateNumber", "record_time",
+        "isOverspeed", "overspeedTime", "isFatigueDriving",
+        "isNeutralSlide", "neutralSlideTime", "isRapidlySpeedup",
+        "isRapidlySlowdown", "isHthrottleStop", "isOilLeak"
+    ]
     
     try:
-        df = read_tables(spark, tables_names, normalize_timestamp(start_time), normalize_timestamp(end_time), driver_id)
+        df = read_tables(spark, tables_names, normalize_timestamp(start_time), normalize_timestamp(end_time), driver_id,column=needed_columns)
         if df is None:
             return jsonify({"success": False, "message": "No data found for the given period "+f"({start_time} to {end_time}) in tables_names:{tables_names}"})
         
         df.printSchema()
         
-        filtered = df.filter(
-            (col("record_time") >= to_timestamp(lit(normalize_timestamp(start_time)), "yyyy-MM-dd HH:mm:ss")) &
-            (col("record_time") <= to_timestamp(lit(normalize_timestamp(end_time)),   "yyyy-MM-dd HH:mm:ss"))
-        )
+        filtered = df
         
         if driver_id and driver_id != "all":
             filtered = filtered.filter(col("driverID") == driver_id)
@@ -270,19 +277,12 @@ def get_speed_data():
     tables_names = handle_time(start_time, end_time)
     
     try:
-        df = read_tables(spark, tables_names, normalize_timestamp(start_time), normalize_timestamp(end_time), driver_id)
+        df = read_tables(spark, tables_names, normalize_timestamp(start_time), normalize_timestamp(end_time), driver_id, column=["record_time", "speed", "isOverspeed"])
         if df is None:
             return jsonify({"success": False, "message": "No data found for the given period "+f"({start_time} to {end_time})"})
         
         
-
-        filtered = df.filter(
-            (col("record_time") >= to_timestamp(lit(normalize_timestamp(start_time)), "yyyy-MM-dd HH:mm:ss")) &
-            (col("record_time") <= to_timestamp(lit(normalize_timestamp(end_time)),   "yyyy-MM-dd HH:mm:ss")) &
-            (col("driverID") == driver_id)
-        )
-        
-        json_str = filtered.select("record_time", "speed", "isOverspeed") \
+        json_str = df.select("record_time", "speed", "isOverspeed") \
                   .orderBy("record_time") \
                   .toJSON() \
                   .collect()
