@@ -167,7 +167,10 @@ def read_tables(spark, table_names, start_time, end_time, driver_id, column=None
 
     return result_df
 
-
+@app.route('/')
+def health_check():
+    return jsonify({"status": "healthy"}), 200
+    
 @app.route('/api/get_drivers', methods=['POST'])
 def get_drivers():
     data = request.get_json(silent=True) or {}
