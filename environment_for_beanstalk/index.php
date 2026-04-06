@@ -525,14 +525,6 @@
         });
 
         const data = await response.json();
-
-        if (!data.success) {
-          console.error("API error:", data.message);
-          alert(data.message);
-        } else {
-          console.log("API data:", data);
-        }
-
         if (data.success) {
           displaySummary(data.data);
         } else {
@@ -604,9 +596,10 @@
 
     let speedChartInstance = null;
     let updateInterval = null;
+    const SPEED_LIMIT = 80;
     let all_speed_data = [];
     let window_index = 0;
-    const WINDOW_SIZE_MINUTES = 5;
+    const WINDOW_SIZE_MINUTES = 1;
     const SLIDE_INTERVAL = 30000;
 
     // get speed data and update diagram
@@ -635,36 +628,28 @@
         });
 
         const result = await response.json();
-        document.getElementById('chartTitle').textContent = "";
 
         // check speed data 
         if (result.success && result.data && result.data.length > 0) {
           // store all speed data 
           all_speed_data = result.data.map(row => ({
-            time: new Date(row.Time),
-            speed: parseFloat(row.Speed) || 0,
-            isOverSpeed: Boolean(row.isOverSpeed)
-          }));
+            time: new Date(row.record_time),
+            speed: parseFloat(row.speed) || 0
+          })).filter(p => !isNaN(p.time.getTime()));
+
+          if (resetWindow) window_index = 0;
           showCurrentWindow();
-        } else {
+
+          if (updateInterval) clearInterval(updateInterval);
+            updateInterval = setInterval(() => {
+                window_index++;
+                showCurrentWindow();
+            }, SLIDE_INTERVAL);
+
+        }else {
           // no speed data 
           document.getElementById('chartTitle').textContent = `No speed data for Driver ${driver_id}`;
         }
-
-        document.getElementById('chartTitle').textContent = `Driver ${driver_id} -  Speed Monitoring`;
-
-        if (resetWindow) {
-          window_index = 0;
-        }
-
-        showCurrentWindow();
-
-        // refresh every 30s
-        if (updateInterval) clearInterval(updateInterval);
-        updateInterval = setInterval(() => {
-          window_index += 1;
-          showCurrentWindow();
-        }, SLIDE_INTERVAL);
 
       } catch (error) {
         console.error('Error fetching speed data:', error);
@@ -674,31 +659,45 @@
 
     // show current WINDOW_SIZE_MINUTES 
     function showCurrentWindow() {
-      if (all_speed_data.length === 0) return;
+      const MAX_RETRIES = 10;
+
+      if (!all_speed_data.length) return;
+
+
+      const startTimeInput = document.getElementById('startTime');
+      const endTimeInput = document.getElementById('endTime');
+      if (!startTimeInput || !endTimeInput) return;
+      if (!startTimeInput.value || !endTimeInput.value) return;
+
+      const baseStart = new Date(startTimeInput.value + 'Z');
+      const baseEnd = new Date(endTimeInput.value + 'Z');
+      if (isNaN(baseStart.getTime()) || isNaN(baseEnd.getTime())) return;
 
       const windowMs = WINDOW_SIZE_MINUTES * 60 * 1000;
-      const baseStartTime = document.getElementById('startTime').valueAsDate;
-      let startIdx = window_index;
 
-      const windowStartTime = new Date(baseStartTime.getTime() + window_index * 60 * 1000);
-      const windowEndTime = new Date(windowStartTime.getTime() + windowMs);
+      let windowStart = new Date(baseStart.getTime() + window_index * windowMs);
+      let windowEnd = new Date(windowStart.getTime() + windowMs);
 
       // loop back at the end
-      const userEndTime = document.getElementById('endTime').valueAsDate;
-      if (windowStartTime >= userEndTime) {
+      if (windowStart >= baseEnd) {
         window_index = 0;
-        return;
-      }
+        windowStart = new Date(baseStart.getTime());
+        windowEnd = new Date(windowStart.getTime() + windowMs);
+    }
 
       // get data in current window
       const windowData = all_speed_data.filter(point =>
-        point.time >= windowStartTime && point.time < windowEndTime
+        point.time >= windowStart && point.time < windowEnd
       );
 
       if (windowData.length === 0) {
         window_index++;
+        if (window_index * windowMs < (baseEnd - baseStart)) {
+            showCurrentWindow(retryCount + 1);
+        }
         return;
       }
+      
 
       const labels = windowData.map(p =>
         p.time.toLocaleString('en', {
@@ -711,16 +710,16 @@
       const speeds = windowData.map(p => p.speed);
 
       // check overspeed
-      const is_overspeed = windowData.some(p => p.isOverSpeed);
+      const is_overspeed = speeds.some(s => s > SPEED_LIMIT);
       if (is_overspeed) {
         showAlert(`Driver ${document.getElementById('driverSelect').value} is SPEEDING!`, 'error');
       }
 
       // handle time format
-      const timeFrom = windowStartTime.toLocaleString('en', {
+      const timeFrom = windowStart.toLocaleString('en', {
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       });
-      const timeTo = windowEndTime.toLocaleString('en', {
+      const timeTo = windowEnd.toLocaleString('en', {
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       });
 
@@ -743,9 +742,15 @@
                 backgroundColor: 'rgba(231, 76, 60, 0.1)',
                 borderWidth: 3,
                 tension: 0.2,
-                pointRadius: 2,
-                pointBackgroundColor: windowData.map(p => p.isOverSpeed ? '#e74c3c' : '#3498db')
-
+                pointRadius: 2
+              },
+              {
+                label: 'Speed Limit (80 km/h)',
+                data: new Array(labels.length).fill(SPEED_LIMIT),
+                borderColor: '#f1c40f',
+                borderWidth: 2,
+                borderDash: [5, 5],
+                pointRadius: 0
               }
             ]
           },
@@ -754,9 +759,7 @@
             maintainAspectRatio: false,
             scales: {
               x: {
-                title: {
-                  display: true, text: 'Time'
-                }
+                title: { display: true, text: 'Time' }
               },
               y: {
                 beginAtZero: true,
@@ -766,11 +769,6 @@
             },
             plugins: {
               legend: { position: 'top' }
-            },
-            elements: {
-              point: {
-                radius: 3
-              }
             }
           }
         });
@@ -778,11 +776,13 @@
         // refresh diagram data
         speedChartInstance.data.labels = labels;
         speedChartInstance.data.datasets[0].data = speeds;
-        speedChartInstance.data.datasets[0].pointBackgroundColor =
-          windowData.map(p => p.isOverSpeed ? '#e74c3c' : '#3498db');
+        speedChartInstance.data.datasets[1].data = new Array(labels.length).fill(SPEED_LIMIT);
         speedChartInstance.update('none');
       }
-    }
+}
+    
+
+
 
     function showAlert(message, type = 'error') {
       alert(message);
