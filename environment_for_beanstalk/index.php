@@ -588,8 +588,8 @@
         summaryTab.style.display = 'none';
         monitorTab.style.display = 'block';
         tabs[1].classList.add('active');
-
         updateSpeedChart(true);
+
       }
     }
 
@@ -611,7 +611,15 @@
       // send request
       if (!startTime || !endTime || driver_id === "all") {
         document.getElementById('chartTitle').textContent = "Please select a specific driver";
+        // clear the chart if exists
+        if (speedChartInstance) {
+          speedChartInstance.destroy();
+          speedChartInstance = null;
+        }
 
+        // clear canvas
+        const ctx = document.getElementById('speedChart').getContext('2d');
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         return;
       }
 
@@ -638,9 +646,13 @@
           })).filter(p => !isNaN(p.time.getTime()));
 
           if (resetWindow) window_index = 0;
+          if (updateInterval) {
+            clearInterval(updateInterval);
+            updateInterval = null;
+          }
+
           showCurrentWindow();
 
-          if (updateInterval) clearInterval(updateInterval);
           updateInterval = setInterval(() => {
             window_index++;
             showCurrentWindow();
@@ -649,11 +661,31 @@
         } else {
           // no speed data 
           document.getElementById('chartTitle').textContent = `No speed data for Driver ${driver_id}`;
+
+          if (speedChartInstance) {
+            speedChartInstance.destroy();
+            speedChartInstance = null;
+          }
+
+
+          const ctx = document.getElementById('speedChart').getContext('2d');
+          ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
         }
 
       } catch (error) {
         console.error('Error fetching speed data:', error);
         document.getElementById('chartTitle').textContent = "Error loading speed data";
+
+        if (speedChartInstance) {
+          speedChartInstance.destroy();
+          speedChartInstance = null;
+        }
+
+
+        const ctx = document.getElementById('speedChart').getContext('2d');
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
       }
     }
 
@@ -661,7 +693,15 @@
     function showCurrentWindow() {
       const MAX_RETRIES = 10;
 
-      if (!all_speed_data.length) return;
+      if (!all_speed_data.length) {
+        if (speedChartInstance) {
+          speedChartInstance.destroy();
+          speedChartInstance = null;
+        }
+        const ctx = document.getElementById('speedChart').getContext('2d');
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        return;
+      }
 
 
       const startTimeInput = document.getElementById('startTime');
