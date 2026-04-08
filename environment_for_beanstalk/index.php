@@ -641,12 +641,12 @@
           showCurrentWindow();
 
           if (updateInterval) clearInterval(updateInterval);
-            updateInterval = setInterval(() => {
-                window_index++;
-                showCurrentWindow();
-            }, SLIDE_INTERVAL);
+          updateInterval = setInterval(() => {
+            window_index++;
+            showCurrentWindow();
+          }, SLIDE_INTERVAL);
 
-        }else {
+        } else {
           // no speed data 
           document.getElementById('chartTitle').textContent = `No speed data for Driver ${driver_id}`;
         }
@@ -683,7 +683,7 @@
         window_index = 0;
         windowStart = new Date(baseStart.getTime());
         windowEnd = new Date(windowStart.getTime() + windowMs);
-    }
+      }
 
       // get data in current window
       const windowData = all_speed_data.filter(point =>
@@ -692,12 +692,9 @@
 
       if (windowData.length === 0) {
         window_index++;
-        if (window_index * windowMs < (baseEnd - baseStart)) {
-            showCurrentWindow(retryCount + 1);
-        }
         return;
       }
-      
+
 
       const labels = windowData.map(p =>
         p.time.toLocaleString('en', {
@@ -779,8 +776,8 @@
         speedChartInstance.data.datasets[1].data = new Array(labels.length).fill(SPEED_LIMIT);
         speedChartInstance.update('none');
       }
-}
-    
+    }
+
 
 
 
