@@ -780,8 +780,8 @@
                 borderWidth: 3,
                 tension: 0.2,
                 pointRadius: 2,
-                pointBackgroundColor: windowData.map(p => p.isOverspeed ? '#ff0000' : '#fcf400'),
-                pointBorderColor: windowData.map(p => p.isOverspeed ? '#ff0000' : '#fcf400')
+                pointBackgroundColor: windowData.map(p => p.isOverspeed ? '#ff0000' : '#00ff51'),
+                pointBorderColor: windowData.map(p => p.isOverspeed ? '#ff0000' : '#00ff51')
               }
             ]
           },
