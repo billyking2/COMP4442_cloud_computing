@@ -807,8 +807,8 @@
         // refresh diagram data
         speedChartInstance.data.labels = labels;
         speedChartInstance.data.datasets[0].data = speeds;
-        speedChartInstance.data.datasets[0].pointBackgroundColor = windowData.map(p => p.isOverspeed ? '#ff0000' : '#fcf400');
-        speedChartInstance.data.datasets[0].pointBorderColor = windowData.map(p => p.isOverspeed ? '#ff0000' : '#fcf400');
+        speedChartInstance.data.datasets[0].pointBackgroundColor = windowData.map(p => p.isOverspeed ? '#ff0000' : '#00ff51');
+        speedChartInstance.data.datasets[0].pointBorderColor = windowData.map(p => p.isOverspeed ? '#ff0000' : '#00ff51');
         speedChartInstance.update('none');
       }
     }
