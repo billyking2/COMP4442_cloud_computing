@@ -596,7 +596,6 @@
 
     let speedChartInstance = null;
     let updateInterval = null;
-    const SPEED_LIMIT = 80;
     let all_speed_data = [];
     let window_index = 0;
     const WINDOW_SIZE_MINUTES = 1;
@@ -642,7 +641,8 @@
           // store all speed data 
           all_speed_data = result.data.map(row => ({
             time: new Date(row.record_time),
-            speed: parseFloat(row.speed) || 0
+            speed: parseFloat(row.speed) || 0,
+            isOverspeed: row.isOverspeed === true
           })).filter(p => !isNaN(p.time.getTime()));
 
           if (resetWindow) window_index = 0;
@@ -747,7 +747,7 @@
       const speeds = windowData.map(p => p.speed);
 
       // check overspeed
-      const is_overspeed = speeds.some(s => s > SPEED_LIMIT);
+      const is_overspeed = windowData.some(p => p.isOverspeed === true);
       if (is_overspeed) {
         showAlert(`Driver ${document.getElementById('driverSelect').value} is SPEEDING!`, 'error');
       }
@@ -780,14 +780,8 @@
                 borderWidth: 3,
                 tension: 0.2,
                 pointRadius: 2
-              },
-              {
-                label: 'Speed Limit (80 km/h)',
-                data: new Array(labels.length).fill(SPEED_LIMIT),
-                borderColor: '#f1c40f',
-                borderWidth: 2,
-                borderDash: [5, 5],
-                pointRadius: 0
+                pointBackgroundColor: windowData.map(p => p.isOverspeed ? '#ff0000' : '#fcf400'),
+                pointBorderColor: windowData.map(p => p.isOverspeed ? '#ff0000' : '#fcf400')
               }
             ]
           },
@@ -813,7 +807,6 @@
         // refresh diagram data
         speedChartInstance.data.labels = labels;
         speedChartInstance.data.datasets[0].data = speeds;
-        speedChartInstance.data.datasets[1].data = new Array(labels.length).fill(SPEED_LIMIT);
         speedChartInstance.update('none');
       }
     }
