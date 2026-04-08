@@ -398,6 +398,7 @@
 
           uploadStatus.innerHTML = result.message;
           uploadStatus.style.color = 'green';
+          showAlert(result.message, 'success');
 
           setTimeout(() => {
             closeUploadModal();
@@ -816,7 +817,7 @@
 
 
 
-    function showAlert(message, type = 'error') {
+    function showAlert(message, type) {
       alert(message);
     }
 
