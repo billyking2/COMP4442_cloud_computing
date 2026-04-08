@@ -779,7 +779,7 @@
                 backgroundColor: 'rgba(231, 76, 60, 0.1)',
                 borderWidth: 3,
                 tension: 0.2,
-                pointRadius: 2
+                pointRadius: 2,
                 pointBackgroundColor: windowData.map(p => p.isOverspeed ? '#ff0000' : '#fcf400'),
                 pointBorderColor: windowData.map(p => p.isOverspeed ? '#ff0000' : '#fcf400')
               }
@@ -807,6 +807,8 @@
         // refresh diagram data
         speedChartInstance.data.labels = labels;
         speedChartInstance.data.datasets[0].data = speeds;
+        speedChartInstance.data.datasets[0].pointBackgroundColor = windowData.map(p => p.isOverspeed ? '#ff0000' : '#fcf400');
+        speedChartInstance.data.datasets[0].pointBorderColor = windowData.map(p => p.isOverspeed ? '#ff0000' : '#fcf400');
         speedChartInstance.update('none');
       }
     }
