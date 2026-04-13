@@ -754,9 +754,7 @@
       }
 
       // handle time format
-      const timeDay = windowEnd.toLocaleString('en', {
-        year: 'numeric', month: '2-digit', day: '2-digit'
-      });
+      const timeDay = windowStart.toISOString().split('T')[0];
       const timeFrom = windowStart.toLocaleString('en', {
         hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC'
       });
