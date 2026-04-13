@@ -402,7 +402,6 @@
 
           setTimeout(() => {
             closeUploadModal();
-            loadDrivers();
             // Trigger data refresh
             const submitEvent = new Event('submit');
             document.getElementById('timeForm').dispatchEvent(submitEvent);
@@ -599,7 +598,7 @@
     let updateInterval = null;
     let all_speed_data = [];
     let window_index = 0;
-    const WINDOW_SIZE_MINUTES = 1;
+    const WINDOW_SIZE_MINUTES = 3;
     const SLIDE_INTERVAL = 30000;
 
     // get speed data and update diagram
@@ -741,7 +740,8 @@
         p.time.toLocaleString('en', {
           hour: '2-digit',
           minute: '2-digit',
-          second: '2-digit'
+          second: '2-digit',
+          timeZone: 'UTC'
         })
       );
 
@@ -754,16 +754,19 @@
       }
 
       // handle time format
+      const timeDay = windowEnd.toLocaleString('en', {
+        year: 'numeric', month: '2-digit', day: '2-digit'
+      });
       const timeFrom = windowStart.toLocaleString('en', {
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
+        hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC'
       });
       const timeTo = windowEnd.toLocaleString('en', {
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
+        hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC'
       });
 
       const driver_id = document.getElementById('driverSelect').value;
       document.getElementById('chartTitle').textContent =
-        `Driver ${driver_id} - ${timeFrom} - ${timeTo}`;
+        `Driver ${driver_id} - ${timeDay} - ${timeFrom} - ${timeTo}`;
 
       // diagram
       if (!speedChartInstance) {
