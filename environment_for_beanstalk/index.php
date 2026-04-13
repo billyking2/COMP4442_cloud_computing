@@ -402,9 +402,7 @@
 
           setTimeout(() => {
             closeUploadModal();
-            // Trigger data refresh
-            const submitEvent = new Event('submit');
-            document.getElementById('timeForm').dispatchEvent(submitEvent);
+            showAlert('File uploaded successfully. Click Submit to view new data.', 'success');
           }, 2000);
         } else {
 
