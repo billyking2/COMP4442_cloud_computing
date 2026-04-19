@@ -1,8 +1,12 @@
-<!DOCTYPE html>
+<?php
+
+
+?>
+<!doctype html>
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <title>COMP4442-group-project</title>
   <style>
@@ -15,8 +19,8 @@
 
     /* set word style and background */
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f79d00 0%, #64f38c 80%);
       min-height: 100vh;
       padding: 20px;
     }
@@ -34,7 +38,7 @@
     /* set header word style and size */
 
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #f79d00 0%, #64f38c 80%);
       color: white;
       padding: 30px;
       text-align: center;
@@ -82,7 +86,6 @@
       font-weight: 500;
     }
 
-
     .form-group input {
       padding: 10px 15px;
       border: 2px solid #ddd;
@@ -95,7 +98,6 @@
       outline: none;
       border-color: #667eea;
     }
-
 
     .submit_btn {
       background: linear-gradient(135deg, #cd201d 0%, #e0ce09 100%);
@@ -167,7 +169,7 @@
     }
 
     th {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #f79d00 0%, #64f38c 75%);
       color: white;
       padding: 12px;
       text-align: left;
@@ -256,28 +258,32 @@
     <div class="header">
       <h1>COMP4442-group-project</h1>
       <p>Driver Behavior Analysis System</p>
-      <button class="upload_btn" onclick="openUploadModal()" style="margin-top: 15px;"> Upload CSV</button>
+      <button class="upload_btn" onclick="openUploadModal()" style="margin-top: 15px">
+        Upload CSV
+      </button>
     </div>
 
     <div class="content">
-
-
       <!-- select time range and driver -->
       <div class="time-selector">
-        <h2> Select the time range </h2>
+        <h2>Select the time range</h2>
         <form id="timeForm">
           <div class="form-group">
             <label>start time:</label>
-            <input type="datetime-local" id="startTime" name="startTime" required>
+            <input type="datetime-local" id="startTime" name="startTime" required />
           </div>
           <div class="form-group">
             <label>end time:</label>
-            <input type="datetime-local" id="endTime" name="endTime" required>
+            <input type="datetime-local" id="endTime" name="endTime" required />
           </div>
           <div class="form-group">
             <label>choose driver:</label>
-            <select id="driverSelect"
-              style="padding: 10px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;">
+            <select id="driverSelect" style="
+                  padding: 10px 15px;
+                  border: 2px solid #ddd;
+                  border-radius: 8px;
+                  font-size: 16px;
+                ">
               <option value="all">all driver</option>
             </select>
           </div>
@@ -287,8 +293,12 @@
 
       <!-- tabs -->
       <div class="tabs">
-        <button class="tab active" onclick="showTab('summary')">Driving behavior information</button>
-        <button class="tab" onclick="showTab('monitor')">Driving speed visualization</button>
+        <button class="tab active" onclick="showTab('summary')">
+          Driving behavior information
+        </button>
+        <button class="tab" onclick="showTab('monitor')">
+          Driving speed visualization
+        </button>
       </div>
 
       <!-- table -->
@@ -313,7 +323,9 @@
             </thead>
             <tbody id="summaryBody">
               <tr>
-                <td colspan="12" style="text-align: center;">Please select time range and click Submit</td>
+                <td colspan="12" style="text-align: center">
+                  Please select time range and click Submit
+                </td>
               </tr>
             </tbody>
           </table>
@@ -321,134 +333,136 @@
       </div>
 
       <!-- diagram -->
-      <div id="monitorTab" class="tab-content" style="display: none;">
+      <div id="monitorTab" class="tab-content" style="display: none">
         <div class="chart-container">
-          <h3 style="text-align: center; margin-bottom: 15px;" id="chartTitle">Driving Speed Monitor</h3>
+          <h3 style="text-align: center; margin-bottom: 15px" id="chartTitle">
+            Driving Speed Monitor
+          </h3>
 
           <!-- Fixed height container -->
-          <div style="position: relative; height: 420px; width: 100%;">
+          <div style="position: relative; height: 420px; width: 100%">
             <canvas id="speedChart"></canvas>
           </div>
 
-          <div id="diagraminfo" style="text-align: center; margin-top: 15px; color: #666;">
-            <p>Speed monitoring is only available for individual drivers. • Auto-sliding every 30 seconds</p>
+          <div id="diagraminfo" style="text-align: center; margin-top: 15px; color: #666">
+            <p>
+              Speed monitoring is only available for individual drivers. •
+              Auto-sliding every 30 seconds
+            </p>
           </div>
         </div>
       </div>
-
     </div>
   </div>
-
 
   <!-- Upload Modal -->
   <div id="uploadModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3> Upload File</h3>
+        <h3>Upload File</h3>
         <span class="close-modal" onclick="closeUploadModal()">&times;</span>
       </div>
       <div class="modal-body">
         <div id="uploadArea" class="upload-area" onclick="document.getElementById('csvFile').click()">
           <div>upload file</div>
-          <div> (Only one file can be uploaded at a time.) </div>
+          <div>(Only one file can be uploaded at a time.)</div>
           <div class="file-info">Support: csv,txt format, max 10MB</div>
         </div>
-        <input type="file" name="file" id="csvFile" accept=".csv,.txt" style="display: none;"
-          onchange="uploadFile(this.files[0])">
-        <div id="uploadStatus" style="font-size: 12px; color: #666; text-align: center;"></div>
+        <input type="file" name="file" id="csvFile" accept=".csv,.txt" style="display: none"
+          onchange="uploadFile(this.files[0])" />
+        <div id="uploadStatus" style="font-size: 12px; color: #666; text-align: center"></div>
       </div>
     </div>
   </div>
 
-
   <script>
-
     // open upload
     function openUploadModal() {
-      document.getElementById('uploadModal').style.display = 'block';
+      document.getElementById("uploadModal").style.display = "block";
     }
 
     // close upload
     function closeUploadModal() {
-      document.getElementById('uploadModal').style.display = 'none';
-      document.getElementById('uploadArea').classList.remove('drag-over');
-      document.getElementById('uploadStatus').innerHTML = '';
-      document.getElementById('csvFile').value = '';
+      document.getElementById("uploadModal").style.display = "none";
+      document.getElementById("uploadArea").classList.remove("drag-over");
+      document.getElementById("uploadStatus").innerHTML = "";
+      document.getElementById("csvFile").value = "";
     }
 
-    //get user file and upload 
+    //get user file and upload
     async function uploadFile(file) {
       if (!file) return;
 
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append("file", file);
 
-      const uploadStatus = document.getElementById('uploadStatus');
-      uploadStatus.innerHTML = 'Uploading...';
+      const uploadStatus = document.getElementById("uploadStatus");
+      uploadStatus.innerHTML = "Uploading...";
       // connect to upload.php
       try {
-        const response = await fetch('upload.php', {
-          method: 'POST',
+        const response = await fetch("upload.php", {
+          method: "POST",
           body: formData,
         });
         const result = await response.json();
 
         // get result success
         if (result.success) {
-
           uploadStatus.innerHTML = result.message;
-          uploadStatus.style.color = 'green';
-          showAlert(result.message, 'success');
+          uploadStatus.style.color = "green";
+          showAlert(result.message, "success");
 
           setTimeout(() => {
             closeUploadModal();
-            showAlert('File uploaded successfully. Click Submit to view new data.', 'success');
+            showAlert(
+              "File uploaded successfully. Click Submit to view new data.",
+              "success",
+            );
           }, 2000);
         } else {
-
-          let errorMessage = result.message || result.error || 'Upload failed';
+          let errorMessage =
+            result.message || result.error || "Upload failed";
 
           //  handling for duplicate file errors
-          if (errorMessage.includes('already exists')) {
+          if (errorMessage.includes("already exists")) {
             uploadStatus.innerHTML = errorMessage;
-            uploadStatus.style.color = 'orange';
+            uploadStatus.style.color = "orange";
 
-            showAlert(errorMessage, 'error');
+            showAlert(errorMessage, "error");
 
             setTimeout(() => {
-              if (uploadStatus.innerHTML.includes('already exists')) {
-                uploadStatus.innerHTML = '';
+              if (uploadStatus.innerHTML.includes("already exists")) {
+                uploadStatus.innerHTML = "";
               }
             }, 1000);
 
             // handle for other errors
           } else {
             uploadStatus.innerHTML = errorMessage;
-            uploadStatus.style.color = 'red';
-            showAlert('Upload failed: ' + errorMessage, 'error');
+            uploadStatus.style.color = "red";
+            showAlert("Upload failed: " + errorMessage, "error");
 
             setTimeout(() => {
               closeUploadModal();
             }, 1000);
           }
         }
-        // unexpected error 
+        // unexpected error
       } catch (error) {
-        console.error('Upload error:', error);
-        uploadStatus.innerHTML = ' Upload failed: ' + error.message;
-        uploadStatus.style.color = 'red';
-        showAlert('Upload failed: ' + error.message, 'error');
+        console.error("Upload error:", error);
+        uploadStatus.innerHTML = " Upload failed: " + error.message;
+        uploadStatus.style.color = "red";
+        showAlert("Upload failed: " + error.message, "error");
 
         setTimeout(() => {
           closeUploadModal();
         }, 1000);
       } finally {
         setTimeout(() => {
-          uploadStatus.innerHTML = '';
+          uploadStatus.innerHTML = "";
         }, 1000);
       }
     }
-
 
     // data display functions
     function setDefaultDates() {
@@ -456,8 +470,8 @@
       const start = new Date();
       start.setDate(start.getDate() - 7);
 
-      document.getElementById('startTime').value = formatDateTime(start);
-      document.getElementById('endTime').value = formatDateTime(end);
+      document.getElementById("startTime").value = formatDateTime(start);
+      document.getElementById("endTime").value = formatDateTime(end);
     }
 
     function formatDateTime(date) {
@@ -466,89 +480,102 @@
 
     // get driver list and update driver select options
     async function loadDrivers() {
-      const startTime = document.getElementById('startTime').value;
-      const endTime = document.getElementById('endTime').value;
+      const startTime = document.getElementById("startTime").value;
+      const endTime = document.getElementById("endTime").value;
       try {
-        const response = await fetch('http://18.214.80.27:8080/api/get_drivers', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            start_time: startTime,
-            end_time: endTime
-          })
-        });
+        const response = await fetch(
+          "http://18.214.80.27:8080/api/get_drivers",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              start_time: startTime,
+              end_time: endTime,
+            }),
+          },
+        );
 
         const data = await response.json();
         // update driver select options
         if (data.success) {
-          const select = document.getElementById('driverSelect');
+          const select = document.getElementById("driverSelect");
           select.innerHTML = '<option value="all">all driver</option>';
 
-          data.drivers.forEach(driver => {
-            const option = document.createElement('option');
+          data.drivers.forEach((driver) => {
+            const option = document.createElement("option");
             option.value = driver;
             option.textContent = `${driver}`;
             select.appendChild(option);
           });
         }
       } catch (error) {
-        console.error('Failed to load drivers:', error);
+        console.error("Failed to load drivers:", error);
       }
     }
 
-    // get driving behavior information 
-    document.getElementById('timeForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    // get driving behavior information
+    document
+      .getElementById("timeForm")
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-      const startTime = document.getElementById('startTime').value;
-      const endTime = document.getElementById('endTime').value;
-      const driverId = document.getElementById('driverSelect').value;
+        const startTime = document.getElementById("startTime").value;
+        const endTime = document.getElementById("endTime").value;
+        const driverId = document.getElementById("driverSelect").value;
 
-      if (!startTime || !endTime) {
-        showAlert('Please select start and end time', 'error');
-        return;
-      }
-
-      // call to get driving behavior information
-      try {
-        const response = await fetch('http://18.214.80.27:8080/api/get_driving_behavior_information', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            start_time: startTime,
-            end_time: endTime,
-            driver_id: driverId
-          })
-
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          displaySummary(data.data);
-        } else {
-          showAlert('Failed to get data: ' + (data.message || 'Unknown error'), 'error');
-          tbody.innerHTML = '<tr><td colspan="12" style="text-align: center;">No data found</td></tr>';
+        if (!startTime || !endTime) {
+          showAlert("Please select start and end time", "error");
+          return;
         }
-        await loadDrivers();
 
-      } catch (error) {
-        console.error('Error:', error);
-        showAlert('Request failed: ' + error.message, 'error');
-      }
-    });
+        // call to get driving behavior information
+        try {
+          const response = await fetch(
+            "http://18.214.80.27:8080/api/get_driving_behavior_information",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                start_time: startTime,
+                end_time: endTime,
+                driver_id: driverId,
+              }),
+            },
+          );
+
+          const data = await response.json();
+          if (data.success) {
+            displaySummary(data.data);
+          } else {
+            showAlert(
+              "Failed to get data: " + (data.message || "Unknown error"),
+              "error",
+            );
+            tbody.innerHTML =
+              '<tr><td colspan="12" style="text-align: center;">No data found</td></tr>';
+          }
+          await loadDrivers();
+        } catch (error) {
+          console.error("Error:", error);
+          showAlert("Request failed: " + error.message, "error");
+        }
+      });
 
     // display data in table
     function displaySummary(data) {
-      const tbody = document.getElementById('summaryBody');
+      const tbody = document.getElementById("summaryBody");
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="12" style="text-align: center;">No data found</td></tr>';
+        tbody.innerHTML =
+          '<tr><td colspan="12" style="text-align: center;">No data found</td></tr>';
         return;
       }
 
-      tbody.innerHTML = data.map(row => `
+      tbody.innerHTML = data
+        .map(
+          (row) => `
         <tr>
-          <td>${row.driverID || '-'}</td>
-          <td>${row.carPlateNumber ? row.carPlateNumber : '-'}</td>
+          <td>${row.driverID || "-"}</td>
+          <td>${row.carPlateNumber ? row.carPlateNumber : "-"}</td>
           <td>${row.count_overspeed || 0}</td>
           <td>${row.time_overspeed || 0}</td>
           <td>${row.count_fatigueDriving || 0}</td>
@@ -560,37 +587,35 @@
           <td>${row.count_oilLeak || 0}</td>
           <td>${row.count_dangerEvent || 0}</td>
         </tr>
-      `).join('');
+      `,
+        )
+        .join("");
     }
 
-
-    // tab switching 
+    // tab switching
     function showTab(tabName) {
-      const summaryTab = document.getElementById('summaryTab');
-      const monitorTab = document.getElementById('monitorTab');
-      const tabs = document.querySelectorAll('.tab');
+      const summaryTab = document.getElementById("summaryTab");
+      const monitorTab = document.getElementById("monitorTab");
+      const tabs = document.querySelectorAll(".tab");
 
-      tabs.forEach(tab => tab.classList.remove('active'));
+      tabs.forEach((tab) => tab.classList.remove("active"));
 
-      if (tabName === 'summary') {
-        summaryTab.style.display = 'block';
-        tabs[0].classList.add('active');
-        monitorTab.style.display = 'none';
+      if (tabName === "summary") {
+        summaryTab.style.display = "block";
+        tabs[0].classList.add("active");
+        monitorTab.style.display = "none";
 
         if (updateInterval) {
           clearInterval(updateInterval);
           updateInterval = null;
         }
       } else {
-
-        summaryTab.style.display = 'none';
-        monitorTab.style.display = 'block';
-        tabs[1].classList.add('active');
+        summaryTab.style.display = "none";
+        monitorTab.style.display = "block";
+        tabs[1].classList.add("active");
         updateSpeedChart(true);
-
       }
     }
-
 
     let speedChartInstance = null;
     let updateInterval = null;
@@ -601,13 +626,14 @@
 
     // get speed data and update diagram
     async function updateSpeedChart(resetWindow = true) {
-      const startTime = document.getElementById('startTime').value;
-      const endTime = document.getElementById('endTime').value;
-      const driver_id = document.getElementById('driverSelect').value;
+      const startTime = document.getElementById("startTime").value;
+      const endTime = document.getElementById("endTime").value;
+      const driver_id = document.getElementById("driverSelect").value;
 
       // send request
       if (!startTime || !endTime || driver_id === "all") {
-        document.getElementById('chartTitle').textContent = "Please select a specific driver";
+        document.getElementById("chartTitle").textContent =
+          "Please select a specific driver";
         // clear the chart if exists
         if (speedChartInstance) {
           speedChartInstance.destroy();
@@ -615,33 +641,38 @@
         }
 
         // clear canvas
-        const ctx = document.getElementById('speedChart').getContext('2d');
+        const ctx = document.getElementById("speedChart").getContext("2d");
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         return;
       }
 
       try {
         //send request
-        const response = await fetch('http://18.214.80.27:8080/api/get_speed_data', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            start_time: startTime,
-            end_time: endTime,
-            driver_id: driver_id
-          })
-        });
+        const response = await fetch(
+          "http://18.214.80.27:8080/api/get_speed_data",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              start_time: startTime,
+              end_time: endTime,
+              driver_id: driver_id,
+            }),
+          },
+        );
 
         const result = await response.json();
 
-        // check speed data 
+        // check speed data
         if (result.success && result.data && result.data.length > 0) {
-          // store all speed data 
-          all_speed_data = result.data.map(row => ({
-            time: new Date(row.record_time),
-            speed: parseFloat(row.speed) || 0,
-            isOverspeed: row.isOverspeed === true
-          })).filter(p => !isNaN(p.time.getTime()));
+          // store all speed data
+          all_speed_data = result.data
+            .map((row) => ({
+              time: new Date(row.record_time),
+              speed: parseFloat(row.speed) || 0,
+              isOverspeed: row.isOverspeed === true,
+            }))
+            .filter((p) => !isNaN(p.time.getTime()));
 
           if (resetWindow) window_index = 0;
           if (updateInterval) {
@@ -655,39 +686,35 @@
             window_index++;
             showCurrentWindow();
           }, SLIDE_INTERVAL);
-
         } else {
-          // no speed data 
-          document.getElementById('chartTitle').textContent = `No speed data for Driver ${driver_id}`;
+          // no speed data
+          document.getElementById("chartTitle").textContent =
+            `No speed data for Driver ${driver_id}`;
 
           if (speedChartInstance) {
             speedChartInstance.destroy();
             speedChartInstance = null;
           }
 
-
-          const ctx = document.getElementById('speedChart').getContext('2d');
+          const ctx = document.getElementById("speedChart").getContext("2d");
           ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
         }
-
       } catch (error) {
-        console.error('Error fetching speed data:', error);
-        document.getElementById('chartTitle').textContent = "Error loading speed data";
+        console.error("Error fetching speed data:", error);
+        document.getElementById("chartTitle").textContent =
+          "Error loading speed data";
 
         if (speedChartInstance) {
           speedChartInstance.destroy();
           speedChartInstance = null;
         }
 
-
-        const ctx = document.getElementById('speedChart').getContext('2d');
+        const ctx = document.getElementById("speedChart").getContext("2d");
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
       }
     }
 
-    // show current WINDOW_SIZE_MINUTES 
+    // show current WINDOW_SIZE_MINUTES
     function showCurrentWindow() {
       const MAX_RETRIES = 10;
 
@@ -696,24 +723,25 @@
           speedChartInstance.destroy();
           speedChartInstance = null;
         }
-        const ctx = document.getElementById('speedChart').getContext('2d');
+        const ctx = document.getElementById("speedChart").getContext("2d");
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         return;
       }
 
-
-      const startTimeInput = document.getElementById('startTime');
-      const endTimeInput = document.getElementById('endTime');
+      const startTimeInput = document.getElementById("startTime");
+      const endTimeInput = document.getElementById("endTime");
       if (!startTimeInput || !endTimeInput) return;
       if (!startTimeInput.value || !endTimeInput.value) return;
 
-      const baseStart = new Date(startTimeInput.value + 'Z');
-      const baseEnd = new Date(endTimeInput.value + 'Z');
+      const baseStart = new Date(startTimeInput.value + "Z");
+      const baseEnd = new Date(endTimeInput.value + "Z");
       if (isNaN(baseStart.getTime()) || isNaN(baseEnd.getTime())) return;
 
       const windowMs = WINDOW_SIZE_MINUTES * 60 * 1000;
 
-      let windowStart = new Date(baseStart.getTime() + window_index * windowMs);
+      let windowStart = new Date(
+        baseStart.getTime() + window_index * windowMs,
+      );
       let windowEnd = new Date(windowStart.getTime() + windowMs);
 
       // loop back at the end
@@ -724,8 +752,8 @@
       }
 
       // get data in current window
-      const windowData = all_speed_data.filter(point =>
-        point.time >= windowStart && point.time < windowEnd
+      const windowData = all_speed_data.filter(
+        (point) => point.time >= windowStart && point.time < windowEnd,
       );
 
       if (windowData.length === 0) {
@@ -733,88 +761,100 @@
         return;
       }
 
-
-      const labels = windowData.map(p =>
-        p.time.toLocaleString('en', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          timeZone: 'UTC'
-        })
+      const labels = windowData.map((p) =>
+        p.time.toLocaleString("en", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          timeZone: "UTC",
+        }),
       );
 
-      const speeds = windowData.map(p => p.speed);
+      const speeds = windowData.map((p) => p.speed);
 
       // check overspeed
-      const is_overspeed = windowData.some(p => p.isOverspeed === true);
+      const is_overspeed = windowData.some((p) => p.isOverspeed === true);
       if (is_overspeed) {
-        showAlert(`Driver ${document.getElementById('driverSelect').value} is SPEEDING!`, 'error');
+        showAlert(
+          `Driver ${document.getElementById("driverSelect").value} is SPEEDING!`,
+          "error",
+        );
       }
 
       // handle time format
-      const timeDay = windowStart.toISOString().split('T')[0];
-      const timeFrom = windowStart.toLocaleString('en', {
-        hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC'
+      const timeDay = windowStart.toISOString().split("T")[0];
+      const timeFrom = windowStart.toLocaleString("en", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZone: "UTC",
       });
-      const timeTo = windowEnd.toLocaleString('en', {
-        hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC'
+      const timeTo = windowEnd.toLocaleString("en", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZone: "UTC",
       });
 
-      const driver_id = document.getElementById('driverSelect').value;
-      document.getElementById('chartTitle').textContent =
+      const driver_id = document.getElementById("driverSelect").value;
+      document.getElementById("chartTitle").textContent =
         `Driver ${driver_id} - ${timeDay} - ${timeFrom} - ${timeTo}`;
 
       // diagram
       if (!speedChartInstance) {
-        const ctx = document.getElementById('speedChart').getContext('2d');
+        const ctx = document.getElementById("speedChart").getContext("2d");
         speedChartInstance = new Chart(ctx, {
-          type: 'line',
+          type: "line",
           data: {
             labels: labels,
             datasets: [
               {
-                label: 'Speed (km/h)',
+                label: "Speed (km/h)",
                 data: speeds,
-                borderColor: '#e74c3c',
-                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                borderColor: "#e74c3c",
+                backgroundColor: "rgba(231, 76, 60, 0.1)",
                 borderWidth: 3,
                 tension: 0.2,
                 pointRadius: 2,
-                pointBackgroundColor: windowData.map(p => p.isOverspeed ? '#ff0000' : '#00ff51'),
-                pointBorderColor: windowData.map(p => p.isOverspeed ? '#ff0000' : '#00ff51')
-              }
-            ]
+                pointBackgroundColor: windowData.map((p) =>
+                  p.isOverspeed ? "#ff0000" : "#00ff51",
+                ),
+                pointBorderColor: windowData.map((p) =>
+                  p.isOverspeed ? "#ff0000" : "#00ff51",
+                ),
+              },
+            ],
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
               x: {
-                title: { display: true, text: 'Time' }
+                title: { display: true, text: "Time" },
               },
               y: {
                 beginAtZero: true,
-                title: { display: true, text: 'Speed (km/h)' },
-                max: 200
-              }
+                title: { display: true, text: "Speed (km/h)" },
+                max: 200,
+              },
             },
             plugins: {
-              legend: { position: 'top' }
-            }
-          }
+              legend: { position: "top" },
+            },
+          },
         });
       } else {
         // refresh diagram data
         speedChartInstance.data.labels = labels;
         speedChartInstance.data.datasets[0].data = speeds;
-        speedChartInstance.data.datasets[0].pointBackgroundColor = windowData.map(p => p.isOverspeed ? '#ff0000' : '#00ff51');
-        speedChartInstance.data.datasets[0].pointBorderColor = windowData.map(p => p.isOverspeed ? '#ff0000' : '#00ff51');
-        speedChartInstance.update('none');
+        speedChartInstance.data.datasets[0].pointBackgroundColor =
+          windowData.map((p) => (p.isOverspeed ? "#ff0000" : "#00ff51"));
+        speedChartInstance.data.datasets[0].pointBorderColor = windowData.map(
+          (p) => (p.isOverspeed ? "#ff0000" : "#00ff51"),
+        );
+        speedChartInstance.update("none");
       }
     }
-
-
-
 
     function showAlert(message, type) {
       alert(message);
@@ -828,13 +868,11 @@
 
     // close modal when clicking outside
     window.onclick = (event) => {
-      const modal = document.getElementById('uploadModal');
+      const modal = document.getElementById("uploadModal");
       if (event.target === modal) {
         closeUploadModal();
       }
     };
-
-
   </script>
 </body>
 
